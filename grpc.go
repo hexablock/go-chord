@@ -51,19 +51,6 @@ func NewGRPCTransport(sock *net.TCPListener, gserver *grpc.Server, timeout time.
 	return gt
 }
 
-// InitGRPCTransport instantiates a new grpc transport creating a listener and
-// grpc server.
-func InitGRPCTransport(listen string, timeout time.Duration) (*GRPCTransport, error) {
-	// Try to start the listener
-	sock, err := net.Listen("tcp", listen)
-	if err != nil {
-		return nil, err
-	}
-
-	gt := NewGRPCTransport(sock.(*net.TCPListener), grpc.NewServer(), timeout)
-	return gt, nil
-}
-
 func (cs *GRPCTransport) listen() {
 	if err := cs.server.Serve(cs.sock); err != nil {
 		log.Println("ERR", err)
@@ -248,7 +235,7 @@ func (cs *GRPCTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	}
 }
 
-// Find a successor
+// FindSuccessors given the vnode upto n successors
 func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, error) {
 	// Get a conn
 	out, err := cs.getConn(vn.Host)
@@ -436,6 +423,8 @@ func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*BoolErr, er
 	}
 	return &BoolErr{Err: fmt.Sprintf("target vnode not found: %s/%s", in.Host, in.Id)}, nil
 }
+
+// NotifyServe the client
 func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*VnodeListErr, error) {
 	obj, ok := cs.get(in.Target)
 	resp := &VnodeListErr{}
@@ -509,10 +498,8 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 // Shutdown the TCP transport
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
+	// Stop grcp server
 	cs.server.GracefulStop()
-	//cs.server.Stop()
-	cs.sock.Close()
-
 	// Close all the outbound
 	cs.poolLock.Lock()
 	for _, conns := range cs.pool {
