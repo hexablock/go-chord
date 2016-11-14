@@ -16,13 +16,14 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
 	timeout := time.Duration(20 * time.Millisecond)
+	connMaxIdle := time.Duration(300 * time.Second)
 
 	ln, err := net.Listen("tcp", listen)
 	if err != nil {
 		return nil, nil, err
 	}
 	sock := ln.(*net.TCPListener)
-	trans := NewGRPCTransport(sock, grpc.NewServer(), timeout)
+	trans := NewGRPCTransport(sock, grpc.NewServer(), timeout, connMaxIdle)
 
 	return conf, trans, nil
 }

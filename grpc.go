@@ -33,14 +33,14 @@ type GRPCTransport struct {
 
 // NewGRPCTransport creates a new grpc transport using the provided listener
 // and grpc server.
-func NewGRPCTransport(sock *net.TCPListener, gserver *grpc.Server, timeout time.Duration) *GRPCTransport {
+func NewGRPCTransport(sock *net.TCPListener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
 		sock:    sock,
 		server:  gserver,
 		local:   map[string]*localRPC{},
 		pool:    map[string][]*rpcOutConn{},
-		maxIdle: time.Duration(300 * time.Second),
-		timeout: timeout,
+		timeout: rpcTimeout,
+		maxIdle: connMaxIdle,
 	}
 
 	RegisterChordServer(gt.server, gt)
