@@ -112,7 +112,18 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 	ring := &Ring{}
 	ring.init(conf, trans)
 	ring.setLocalSuccessors()
-	ring.schedule()
+	//ring.schedule()
+
+	// Start delegate handler
+	if ring.config.Delegate != nil {
+		go ring.delegateHandler()
+	}
+
+	// Do a fast stabilization, will schedule regular execution
+	for _, vn := range ring.vnodes {
+		vn.stabilize()
+	}
+
 	return ring, nil
 }
 
