@@ -22,8 +22,7 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	sock := ln.(*net.TCPListener)
-	trans := NewGRPCTransport(sock, grpc.NewServer(), timeout, connMaxIdle)
+	trans := NewGRPCTransport(ln, grpc.NewServer(), timeout, connMaxIdle)
 
 	return conf, trans, nil
 }

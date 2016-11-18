@@ -19,8 +19,9 @@ type rpcOutConn struct {
 	used   time.Time
 }
 
+// GRPCTransport used by chord
 type GRPCTransport struct {
-	sock     *net.TCPListener
+	sock     net.Listener
 	server   *grpc.Server
 	lock     sync.RWMutex
 	local    map[string]*localRPC
@@ -33,7 +34,7 @@ type GRPCTransport struct {
 
 // NewGRPCTransport creates a new grpc transport using the provided listener
 // and grpc server.
-func NewGRPCTransport(sock *net.TCPListener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
+func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
 		sock:    sock,
 		server:  gserver,
@@ -93,7 +94,7 @@ func (cs *GRPCTransport) Register(v *Vnode, o VnodeRPC) {
 	cs.lock.Unlock()
 }
 
-// Gets a list of the vnodes on the box
+// ListVnodes gets a list of the vnodes on the box
 func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	// Get a conn
 	out, err := cs.getConn(host)
@@ -166,7 +167,7 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 	}
 }
 
-// Request a nodes predecessor
+// GetPredecessor requests a vnode's predecessor
 func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	// Get a conn
 	out, err := cs.getConn(vn.Host)
