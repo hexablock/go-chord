@@ -52,6 +52,14 @@ func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connM
 	return gt
 }
 
+func (cs *GRPCTransport) Status() map[string]interface{} {
+	m := map[string]int{}
+	for h, v := range cs.pool {
+		m[h] = len(v)
+	}
+	return map[string]interface{}{"pool": m}
+}
+
 func (cs *GRPCTransport) listen() {
 	if err := cs.server.Serve(cs.sock); err != nil {
 		log.Println("ERR", err)
