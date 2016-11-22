@@ -6,28 +6,44 @@ organization for a ring overlay topology.
 
 The protocol is separated from the implementation of an underlying network
 transport or RPC mechanism. Instead Chord relies on a transport implementation.
-The following transport implementations are provided:
-
-- TCPTransport
-- GRPCTransport
-
-#### TCPTransport
-The TCPTransport is implemented using the go native network stack and gob encoding.
+A GRPCTransport has been provided.  A tcp based transport can be found in the
+original repo [armon/go-chord](http://github.com/armon/go-chord).
 
 #### GRPCTransport
-The GRPCTransport uses grpc and protocol buffers to perform rpc operations.
+The GRPCTransport uses gRPC and protocol buffers to perform RPC operations.  This
+allows to register multiple services against the same gRPC server.  Other projects
+can implement their own services and register them against the same server allowing
+multiple services to run on the same listener.
 
 # Development
-When using grpc and changes need to be made, add the appropriate code to the net.proto file,
-and re-generate the code using:
+When changes need to be made to the protocol - add the appropriate code to the
+net.proto file, and re-generate the code using:
 
 	make protoc
 
+To import protobuf structures in other projects using protofbufs, add the following
+import to the protofile:
+
+	import "github.com/euforia/go-chord/net.proto"
+
+To generate the code (assuming both projects are in the same $GOPATH) add the
+following include:
+
+	 -I ../../../
+
+##### Example
+If you had a `rpc.proto` file in a `./rpc` directory which uses this library, the
+command would look as follows:
+
+	protoc -I ../../../ -I ./rpc ./rpc/rpc.proto --go_out=plugins=grpc:rpc
+
 #### Requirements
 
-- Go 1.6.3
+- Go > 1.6.3
 - protoc
 - grpc
 
-# Documentation
-To view the online documentation, go [here](http://godoc.org/github.com/euforia/go-chord).
+# Acknowledgements
+
+The original chord implementation is based on Armon's code available
+[here](http://github.com/armon/go-chord).
