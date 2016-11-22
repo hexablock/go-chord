@@ -1,6 +1,8 @@
 
-build:
-	go build
+
+prep:
+	@which protoc || { echo "protoc: command not found!"; exit 1; }
+	@which glide || { echo "glide: command not found!"; exit 1; }
 
 test:
 	go test -cover .
