@@ -60,11 +60,11 @@ type Delegate interface {
 type Config struct {
 	Hostname      string           // Local host name
 	NumVnodes     int              // Number of vnodes per physical node
-	HashFunc      func() hash.Hash // Hash function to use
+	HashFunc      func() hash.Hash `json:"-"` // Hash function to use
 	StabilizeMin  time.Duration    // Minimum stabilization time
 	StabilizeMax  time.Duration    // Maximum stabilization time
 	NumSuccessors int              // Number of successors to maintain
-	Delegate      Delegate         // Invoked to handle ring events
+	Delegate      Delegate         `json:"-"` // Invoked to handle ring events
 	hashBits      int              // Bit size of the hash function
 }
 
