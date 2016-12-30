@@ -7,7 +7,7 @@ import (
 
 	"github.com/anacrolix/utp"
 
-	"github.com/euforia/go-chord/mux"
+	"github.com/ipkg/go-mux"
 )
 
 func prepRingUTP(port int) (*Config, *UTPTransport, error) {

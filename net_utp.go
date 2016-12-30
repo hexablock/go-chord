@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/euforia/go-chord/mux"
+	"github.com/ipkg/go-mux"
 	"github.com/zeebo/bencode"
 )
 
