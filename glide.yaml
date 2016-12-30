@@ -1,24 +1,14 @@
-package: github.com/euforia/go-chord
+package: .
 import:
+- package: github.com/anacrolix/utp
+- package: github.com/euforia/go-chord
+  subpackages:
+  - mux
 - package: github.com/golang/protobuf
-  version: df1d3ca07d2d07bba352d5b73c4313b4e2a6203e
   subpackages:
   - proto
+- package: github.com/zeebo/bencode
 - package: golang.org/x/net
-  version: cd8c2701a5e10f044db915e65eac68f738399d22
   subpackages:
-  - internal/timeseries
-  - trace
   - context
 - package: google.golang.org/grpc
-  version: eddbd11c7ecd001d06777cb87b5ea7af54227907
-  subpackages:
-  - codes
-  - credentials
-  - grpclog
-  - internal
-  - metadata
-  - naming
-  - peer
-  - tap
-  - transport

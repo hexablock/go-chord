@@ -155,19 +155,10 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		}
 	}
 
-	// Start delegate handler
-	/*if ring.config.Delegate != nil {
-		go ring.delegateHandler()
-	}
-	// Do a fast stabilization.  This will also schedule regular execution
-	for _, vn := range ring.vnodes {
-		vn.stabilize()
-	}*/
-
-	// Do not fast stabilize - This allows the joining node to init its state
-	// and register services.  Performing a fast stabilization will result in
-	// in errors on downstream services as internal states and structures have
-	// not yet been initialized due to their dependency on the ring. A normal
+	// Do not fast stabilize - This allows the joining node to initialize vnodes
+	// if needed and register services.  Performing a fast stabilization will
+	// result in in errors on downstream services as internal states and structures
+	// have not yet been initialized due to their dependency on the ring. A normal
 	// stabilization allows for services to initialize state before any calls
 	// to the delegate are made.
 	ring.schedule()

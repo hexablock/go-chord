@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-// StringID converts the ID to a string
+// StringID converts the ID to a hex encoded string.  As grpc uses String() we use
+// StringID() instead.
 func (vn *Vnode) StringID() string {
 	return fmt.Sprintf("%x", vn.Id)
 }
