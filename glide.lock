@@ -1,5 +1,5 @@
 hash: 895973e275215f6c7ca4fd908b82d800d84f84be9cad590d6519e6037e021a38
-updated: 2016-12-30T13:09:27.055206458-08:00
+updated: 2016-12-31T16:34:19.698317791-08:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: a096221b59b0f9284a80fe0be9ee36ddafb8f719
@@ -11,7 +11,7 @@ imports:
 - name: github.com/anacrolix/utp
   version: cb02a8a1ac94501fb8421531cd94d874360d35b1
 - name: github.com/euforia/go-chord
-  version: 4a2d908e0c0368d52b4f7fce5beb01407bb43e5c
+  version: be95df1db8cd54a7f793366947379bb826e4f391
   subpackages:
   - mux
 - name: github.com/golang/protobuf
