@@ -221,8 +221,3 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 func (r *Ring) ListVnodes(host string) ([]*Vnode, error) {
 	return r.transport.ListVnodes(host)
 }
-
-// Hostname of the current ring node
-func (r *Ring) Hostname() string {
-	return r.config.Hostname
-}
