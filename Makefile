@@ -1,4 +1,7 @@
 
+clean:
+	go clean -i .
+	rm -rf vendor
 
 prep:
 	@which protoc || { echo "protoc: command not found!"; exit 1; }

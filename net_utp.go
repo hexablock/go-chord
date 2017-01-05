@@ -338,12 +338,6 @@ func (t *UTPTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 			return
 		}
 
-		// TODO: bencoding needs to handle nils
-		// bencode unmarshalling does not handle nils
-		if len(resp.Vnode.Host) == 0 {
-			resp.Vnode = nil
-		}
-
 		// Return the connection
 		t.returnConn(out)
 		if resp.Err == "" {
