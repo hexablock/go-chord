@@ -190,7 +190,7 @@ func (r *Ring) Shutdown() {
 }
 
 // Lookup does a key lookup for up to N successors of a key
-func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
+func (r *Ring) Lookup(n int, key []byte) (VnodeSlice, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
 		return nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
@@ -214,10 +214,47 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
-	return successors, nil
+	return VnodeSlice(successors), nil
 }
 
 // ListVnodes for a given host
 func (r *Ring) ListVnodes(host string) ([]*Vnode, error) {
-	return r.transport.ListVnodes(host)
+	vns, err := r.transport.ListVnodes(host)
+	if err == nil {
+		return VnodeSlice(vns), nil
+	}
+	return nil, err
+}
+
+// VnodeSlice contains ops to to query vnode slices
+type VnodeSlice []*Vnode
+
+// UniqueHosts from a list of vnodes
+func (vl VnodeSlice) UniqueHosts() []string {
+	m := map[string]bool{}
+	for _, v := range vl {
+		m[v.Host] = true
+	}
+	out := make([]string, len(m))
+	i := 0
+	for k := range m {
+		out[i] = k
+		i++
+	}
+	return out
+}
+
+// VnodesByHost returns a map of vnodes to hosts.
+func (vl VnodeSlice) VnodesByHost() map[string]VnodeSlice {
+	m := map[string]VnodeSlice{}
+	for _, vn := range vl {
+		v, ok := m[vn.Host]
+		if !ok {
+			m[vn.Host] = VnodeSlice{vn}
+			continue
+		}
+		v = append(v, vn)
+		m[vn.Host] = v
+	}
+	return m
 }
