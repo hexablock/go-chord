@@ -15,7 +15,7 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 	conf.Delegate = &MockDelegate{}
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
-	timeout := time.Duration(20 * time.Millisecond)
+	timeout := time.Duration(2 * time.Second)
 	connMaxIdle := time.Duration(300 * time.Second)
 
 	ln, err := net.Listen("tcp", listen)
@@ -33,10 +33,6 @@ func TestGRPCJoin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRingGrpc(20026)
-	if err != nil {
-		t.Fatalf("unexpected err. %s", err)
-	}
 
 	// Create initial ring
 	r1, err := Create(c1, t1)
@@ -44,6 +40,12 @@ func TestGRPCJoin(t *testing.T) {
 		t.Fatalf("unexpected err. %s", err)
 	}
 
+	c2, t2, err := prepRingGrpc(20026)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	<-time.After(1 * time.Second)
 	// Join ring
 	r2, err := Join(c2, t2, c1.Hostname)
 	if err != nil {
