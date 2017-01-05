@@ -283,7 +283,6 @@ func TestLookup(t *testing.T) {
 	}
 
 }
-
 func Test_VnodeSlice(t *testing.T) {
 	// Create a multi transport
 	ml := InitMLTransport()
@@ -306,7 +305,7 @@ func Test_VnodeSlice(t *testing.T) {
 	if !ok {
 		t.Fatal("missing host")
 	}
-	if len(v) != conf.NumSuccessors {
-		t.Fatal("length mismatch")
+	if len(v) != len(vns) {
+		t.Fatalf("length mismatch: %d=%d", len(vns), len(v))
 	}
 }
