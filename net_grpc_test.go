@@ -86,7 +86,7 @@ func TestGRPCLeave(t *testing.T) {
 	}
 
 	// Wait for some stabilization
-	<-time.After(1500 * time.Millisecond)
+	<-time.After(1 * time.Second)
 
 	// Node 1 should leave
 	r1.Leave()
