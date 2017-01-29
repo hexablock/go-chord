@@ -9,14 +9,7 @@ It is generated from these files:
 	net.proto
 
 It has these top-level messages:
-	Vnode
-	VnodeError
-	VnodeListErr
-	BoolErr
-	FindSuccReq
-	StringParam
-	VnodePair
-	ErrResponse
+	Payload
 */
 package chord
 
@@ -40,199 +33,24 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type Vnode struct {
-	Id   []byte `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Host string `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
+type Payload struct {
+	Data []byte `protobuf:"bytes,1,opt,name=Data,json=data,proto3" json:"Data,omitempty"`
 }
 
-func (m *Vnode) Reset()                    { *m = Vnode{} }
-func (m *Vnode) String() string            { return proto.CompactTextString(m) }
-func (*Vnode) ProtoMessage()               {}
-func (*Vnode) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Payload) Reset()                    { *m = Payload{} }
+func (m *Payload) String() string            { return proto.CompactTextString(m) }
+func (*Payload) ProtoMessage()               {}
+func (*Payload) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *Vnode) GetId() []byte {
+func (m *Payload) GetData() []byte {
 	if m != nil {
-		return m.Id
+		return m.Data
 	}
 	return nil
-}
-
-func (m *Vnode) GetHost() string {
-	if m != nil {
-		return m.Host
-	}
-	return ""
-}
-
-type VnodeError struct {
-	VN  *Vnode `protobuf:"bytes,1,opt,name=VN,json=vN" json:"VN,omitempty"`
-	Err string `protobuf:"bytes,2,opt,name=err" json:"err,omitempty"`
-}
-
-func (m *VnodeError) Reset()                    { *m = VnodeError{} }
-func (m *VnodeError) String() string            { return proto.CompactTextString(m) }
-func (*VnodeError) ProtoMessage()               {}
-func (*VnodeError) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *VnodeError) GetVN() *Vnode {
-	if m != nil {
-		return m.VN
-	}
-	return nil
-}
-
-func (m *VnodeError) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
-}
-
-type VnodeListErr struct {
-	Err    string   `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
-	Vnodes []*Vnode `protobuf:"bytes,2,rep,name=vnodes" json:"vnodes,omitempty"`
-}
-
-func (m *VnodeListErr) Reset()                    { *m = VnodeListErr{} }
-func (m *VnodeListErr) String() string            { return proto.CompactTextString(m) }
-func (*VnodeListErr) ProtoMessage()               {}
-func (*VnodeListErr) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *VnodeListErr) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
-}
-
-func (m *VnodeListErr) GetVnodes() []*Vnode {
-	if m != nil {
-		return m.Vnodes
-	}
-	return nil
-}
-
-type BoolErr struct {
-	Ok  bool   `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
-	Err string `protobuf:"bytes,2,opt,name=err" json:"err,omitempty"`
-}
-
-func (m *BoolErr) Reset()                    { *m = BoolErr{} }
-func (m *BoolErr) String() string            { return proto.CompactTextString(m) }
-func (*BoolErr) ProtoMessage()               {}
-func (*BoolErr) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *BoolErr) GetOk() bool {
-	if m != nil {
-		return m.Ok
-	}
-	return false
-}
-
-func (m *BoolErr) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
-}
-
-type FindSuccReq struct {
-	VN    *Vnode `protobuf:"bytes,1,opt,name=VN,json=vN" json:"VN,omitempty"`
-	Count int32  `protobuf:"varint,2,opt,name=count" json:"count,omitempty"`
-	Key   []byte `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
-}
-
-func (m *FindSuccReq) Reset()                    { *m = FindSuccReq{} }
-func (m *FindSuccReq) String() string            { return proto.CompactTextString(m) }
-func (*FindSuccReq) ProtoMessage()               {}
-func (*FindSuccReq) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
-
-func (m *FindSuccReq) GetVN() *Vnode {
-	if m != nil {
-		return m.VN
-	}
-	return nil
-}
-
-func (m *FindSuccReq) GetCount() int32 {
-	if m != nil {
-		return m.Count
-	}
-	return 0
-}
-
-func (m *FindSuccReq) GetKey() []byte {
-	if m != nil {
-		return m.Key
-	}
-	return nil
-}
-
-type StringParam struct {
-	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
-}
-
-func (m *StringParam) Reset()                    { *m = StringParam{} }
-func (m *StringParam) String() string            { return proto.CompactTextString(m) }
-func (*StringParam) ProtoMessage()               {}
-func (*StringParam) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
-
-func (m *StringParam) GetValue() string {
-	if m != nil {
-		return m.Value
-	}
-	return ""
-}
-
-type VnodePair struct {
-	Target *Vnode `protobuf:"bytes,1,opt,name=target" json:"target,omitempty"`
-	Self   *Vnode `protobuf:"bytes,2,opt,name=self" json:"self,omitempty"`
-}
-
-func (m *VnodePair) Reset()                    { *m = VnodePair{} }
-func (m *VnodePair) String() string            { return proto.CompactTextString(m) }
-func (*VnodePair) ProtoMessage()               {}
-func (*VnodePair) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *VnodePair) GetTarget() *Vnode {
-	if m != nil {
-		return m.Target
-	}
-	return nil
-}
-
-func (m *VnodePair) GetSelf() *Vnode {
-	if m != nil {
-		return m.Self
-	}
-	return nil
-}
-
-type ErrResponse struct {
-	Err string `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
-}
-
-func (m *ErrResponse) Reset()                    { *m = ErrResponse{} }
-func (m *ErrResponse) String() string            { return proto.CompactTextString(m) }
-func (*ErrResponse) ProtoMessage()               {}
-func (*ErrResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *ErrResponse) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
 }
 
 func init() {
-	proto.RegisterType((*Vnode)(nil), "chord.Vnode")
-	proto.RegisterType((*VnodeError)(nil), "chord.VnodeError")
-	proto.RegisterType((*VnodeListErr)(nil), "chord.VnodeListErr")
-	proto.RegisterType((*BoolErr)(nil), "chord.BoolErr")
-	proto.RegisterType((*FindSuccReq)(nil), "chord.FindSuccReq")
-	proto.RegisterType((*StringParam)(nil), "chord.StringParam")
-	proto.RegisterType((*VnodePair)(nil), "chord.VnodePair")
-	proto.RegisterType((*ErrResponse)(nil), "chord.ErrResponse")
+	proto.RegisterType((*Payload)(nil), "chord.Payload")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -246,13 +64,13 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Chord service
 
 type ChordClient interface {
-	ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeListErr, error)
-	PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*BoolErr, error)
-	NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeListErr, error)
-	GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*VnodeError, error)
-	FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeListErr, error)
-	ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error)
-	SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error)
+	ListVnodesServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	PingServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	NotifyServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	GetPredecessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	FindSuccessorsServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	ClearPredecessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
+	SkipSuccessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error)
 }
 
 type chordClient struct {
@@ -263,8 +81,8 @@ func NewChordClient(cc *grpc.ClientConn) ChordClient {
 	return &chordClient{cc}
 }
 
-func (c *chordClient) ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) ListVnodesServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/ListVnodesServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -272,8 +90,8 @@ func (c *chordClient) ListVnodesServe(ctx context.Context, in *StringParam, opts
 	return out, nil
 }
 
-func (c *chordClient) PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*BoolErr, error) {
-	out := new(BoolErr)
+func (c *chordClient) PingServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/PingServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -281,8 +99,8 @@ func (c *chordClient) PingServe(ctx context.Context, in *Vnode, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *chordClient) NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) NotifyServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/NotifyServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -290,8 +108,8 @@ func (c *chordClient) NotifyServe(ctx context.Context, in *VnodePair, opts ...gr
 	return out, nil
 }
 
-func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*VnodeError, error) {
-	out := new(VnodeError)
+func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/GetPredecessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -299,8 +117,8 @@ func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Vnode, opts .
 	return out, nil
 }
 
-func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/FindSuccessorsServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -308,8 +126,8 @@ func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *FindSuccReq, 
 	return out, nil
 }
 
-func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error) {
-	out := new(ErrResponse)
+func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/ClearPredecessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -317,8 +135,8 @@ func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *VnodePair, 
 	return out, nil
 }
 
-func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error) {
-	out := new(ErrResponse)
+func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *Payload, opts ...grpc.CallOption) (*Payload, error) {
+	out := new(Payload)
 	err := grpc.Invoke(ctx, "/chord.chord/SkipSuccessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -329,13 +147,13 @@ func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *VnodePair, opt
 // Server API for Chord service
 
 type ChordServer interface {
-	ListVnodesServe(context.Context, *StringParam) (*VnodeListErr, error)
-	PingServe(context.Context, *Vnode) (*BoolErr, error)
-	NotifyServe(context.Context, *VnodePair) (*VnodeListErr, error)
-	GetPredecessorServe(context.Context, *Vnode) (*VnodeError, error)
-	FindSuccessorsServe(context.Context, *FindSuccReq) (*VnodeListErr, error)
-	ClearPredecessorServe(context.Context, *VnodePair) (*ErrResponse, error)
-	SkipSuccessorServe(context.Context, *VnodePair) (*ErrResponse, error)
+	ListVnodesServe(context.Context, *Payload) (*Payload, error)
+	PingServe(context.Context, *Payload) (*Payload, error)
+	NotifyServe(context.Context, *Payload) (*Payload, error)
+	GetPredecessorServe(context.Context, *Payload) (*Payload, error)
+	FindSuccessorsServe(context.Context, *Payload) (*Payload, error)
+	ClearPredecessorServe(context.Context, *Payload) (*Payload, error)
+	SkipSuccessorServe(context.Context, *Payload) (*Payload, error)
 }
 
 func RegisterChordServer(s *grpc.Server, srv ChordServer) {
@@ -343,7 +161,7 @@ func RegisterChordServer(s *grpc.Server, srv ChordServer) {
 }
 
 func _Chord_ListVnodesServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StringParam)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -355,13 +173,13 @@ func _Chord_ListVnodesServe_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/chord.chord/ListVnodesServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).ListVnodesServe(ctx, req.(*StringParam))
+		return srv.(ChordServer).ListVnodesServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_PingServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Vnode)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -373,13 +191,13 @@ func _Chord_PingServe_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: "/chord.chord/PingServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).PingServe(ctx, req.(*Vnode))
+		return srv.(ChordServer).PingServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_NotifyServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VnodePair)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -391,13 +209,13 @@ func _Chord_NotifyServe_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/chord.chord/NotifyServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).NotifyServe(ctx, req.(*VnodePair))
+		return srv.(ChordServer).NotifyServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_GetPredecessorServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Vnode)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -409,13 +227,13 @@ func _Chord_GetPredecessorServe_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/chord.chord/GetPredecessorServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).GetPredecessorServe(ctx, req.(*Vnode))
+		return srv.(ChordServer).GetPredecessorServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_FindSuccessorsServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindSuccReq)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -427,13 +245,13 @@ func _Chord_FindSuccessorsServe_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/chord.chord/FindSuccessorsServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).FindSuccessorsServe(ctx, req.(*FindSuccReq))
+		return srv.(ChordServer).FindSuccessorsServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_ClearPredecessorServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VnodePair)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -445,13 +263,13 @@ func _Chord_ClearPredecessorServe_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/chord.chord/ClearPredecessorServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).ClearPredecessorServe(ctx, req.(*VnodePair))
+		return srv.(ChordServer).ClearPredecessorServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Chord_SkipSuccessorServe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VnodePair)
+	in := new(Payload)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -463,7 +281,7 @@ func _Chord_SkipSuccessorServe_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/chord.chord/SkipSuccessorServe",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChordServer).SkipSuccessorServe(ctx, req.(*VnodePair))
+		return srv.(ChordServer).SkipSuccessorServe(ctx, req.(*Payload))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -508,32 +326,17 @@ var _Chord_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("net.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 426 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x53, 0x5f, 0x6b, 0x13, 0x41,
-	0x10, 0x4f, 0x2e, 0x4d, 0x35, 0x73, 0x21, 0xd6, 0x89, 0x42, 0x28, 0x82, 0x61, 0xf5, 0xa1, 0x10,
-	0xc8, 0x43, 0x05, 0xf1, 0x21, 0xa0, 0x28, 0xa9, 0x2f, 0x12, 0xc2, 0x1d, 0xf4, 0xfd, 0xbc, 0x9b,
-	0xa6, 0x4b, 0xe2, 0x6d, 0x9c, 0xdd, 0x04, 0xfa, 0x81, 0xfc, 0x9e, 0xb2, 0x73, 0x9b, 0x72, 0xf6,
-	0x52, 0xa4, 0x6f, 0x3b, 0xcc, 0xef, 0xcf, 0xcc, 0xfc, 0xee, 0xa0, 0x57, 0x92, 0x9b, 0x6e, 0xd9,
-	0x38, 0x83, 0xdd, 0xfc, 0xd6, 0x70, 0xa1, 0x26, 0xd0, 0xbd, 0x2e, 0x4d, 0x41, 0x38, 0x80, 0x48,
-	0x17, 0xa3, 0xf6, 0xb8, 0x7d, 0xd1, 0x4f, 0x22, 0x5d, 0x20, 0xc2, 0xc9, 0xad, 0xb1, 0x6e, 0x14,
-	0x8d, 0xdb, 0x17, 0xbd, 0x44, 0xde, 0x6a, 0x06, 0x20, 0xe0, 0x39, 0xb3, 0x61, 0x7c, 0x03, 0xd1,
-	0xf5, 0x42, 0x18, 0xf1, 0x65, 0x7f, 0x2a, 0x72, 0x53, 0x69, 0x27, 0xd1, 0x7e, 0x81, 0x67, 0xd0,
-	0x21, 0xe6, 0x40, 0xf7, 0x4f, 0x75, 0x05, 0x7d, 0x69, 0xff, 0xd0, 0xd6, 0xcd, 0x99, 0x0f, 0x88,
-	0xf6, 0x3d, 0x02, 0xdf, 0xc3, 0xe9, 0xde, 0x23, 0xec, 0x28, 0x1a, 0x77, 0x1a, 0xaa, 0xa1, 0xa7,
-	0x26, 0xf0, 0xec, 0xab, 0x31, 0x1b, 0x2f, 0x31, 0x80, 0xc8, 0xac, 0x45, 0xe1, 0x79, 0x12, 0x99,
-	0xf5, 0x11, 0xd3, 0x14, 0xe2, 0x2b, 0x5d, 0x16, 0xe9, 0x2e, 0xcf, 0x13, 0xfa, 0xfd, 0x9f, 0x99,
-	0x5f, 0x41, 0x37, 0x37, 0xbb, 0xb2, 0x5a, 0xba, 0x9b, 0x54, 0x85, 0x17, 0x5d, 0xd3, 0xdd, 0xa8,
-	0x23, 0xa7, 0xf1, 0x4f, 0xf5, 0x0e, 0xe2, 0xd4, 0xb1, 0x2e, 0x57, 0xcb, 0x8c, 0xb3, 0x5f, 0x9e,
-	0xb6, 0xcf, 0x36, 0x3b, 0x0a, 0xab, 0x54, 0x85, 0x4a, 0xa1, 0x27, 0xca, 0xcb, 0x4c, 0xcb, 0x66,
-	0x2e, 0xe3, 0x15, 0xb9, 0xa3, 0xde, 0xa1, 0x87, 0x63, 0x38, 0xb1, 0xb4, 0xb9, 0x11, 0xfb, 0x87,
-	0x18, 0xe9, 0xa8, 0xb7, 0x10, 0xcf, 0x99, 0x13, 0xb2, 0x5b, 0x53, 0x5a, 0x6a, 0x9e, 0xf0, 0xf2,
-	0x4f, 0x07, 0xaa, 0x64, 0x71, 0x06, 0x2f, 0xfc, 0xa5, 0x85, 0x6d, 0x53, 0xe2, 0x3d, 0x21, 0x06,
-	0xc5, 0xda, 0xf0, 0xe7, 0xc3, 0xba, 0x4b, 0x88, 0x46, 0xb5, 0x70, 0x02, 0xbd, 0xa5, 0x2e, 0x57,
-	0x15, 0xef, 0x9f, 0x49, 0xce, 0x07, 0xa1, 0x0a, 0x21, 0xa8, 0x16, 0x7e, 0x84, 0x78, 0x61, 0x9c,
-	0xbe, 0xb9, 0xab, 0xe0, 0x67, 0x75, 0xb8, 0x5f, 0xff, 0x31, 0x93, 0x4f, 0x30, 0xfc, 0x4e, 0x6e,
-	0xc9, 0x54, 0x50, 0x4e, 0xd6, 0x1a, 0x3e, 0x66, 0xf7, 0xb2, 0x5e, 0xc9, 0x97, 0xa7, 0x5a, 0xf8,
-	0x05, 0x86, 0x87, 0x58, 0x85, 0xf8, 0x60, 0xc1, 0x5a, 0xe4, 0x8f, 0x79, 0x7f, 0x86, 0xd7, 0xdf,
-	0x36, 0x94, 0x71, 0xc3, 0xbd, 0x39, 0xfd, 0x41, 0xb5, 0x76, 0x79, 0xd5, 0xc2, 0x19, 0x60, 0xba,
-	0xd6, 0xdb, 0xfb, 0x11, 0x9e, 0xc4, 0xfe, 0x79, 0x2a, 0x7f, 0xe1, 0x87, 0xbf, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x92, 0x4f, 0xe4, 0x2c, 0x92, 0x03, 0x00, 0x00,
+	// 191 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0xcc, 0x4b, 0x2d, 0xd1,
+	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4d, 0xce, 0xc8, 0x2f, 0x4a, 0x51, 0x92, 0xe5, 0x62,
+	0x0f, 0x48, 0xac, 0xcc, 0xc9, 0x4f, 0x4c, 0x11, 0x12, 0xe2, 0x62, 0x71, 0x49, 0x2c, 0x49, 0x94,
+	0x60, 0x54, 0x60, 0xd4, 0xe0, 0x09, 0x62, 0x49, 0x49, 0x2c, 0x49, 0x34, 0x6a, 0x64, 0xe6, 0x82,
+	0x28, 0x14, 0x32, 0xe6, 0xe2, 0xf7, 0xc9, 0x2c, 0x2e, 0x09, 0xcb, 0xcb, 0x4f, 0x49, 0x2d, 0x0e,
+	0x4e, 0x2d, 0x2a, 0x4b, 0x15, 0xe2, 0xd3, 0x03, 0x4b, 0xe9, 0x41, 0x0d, 0x90, 0x42, 0xe3, 0x2b,
+	0x31, 0x08, 0xe9, 0x72, 0x71, 0x06, 0x64, 0xe6, 0xa5, 0x13, 0xab, 0x5c, 0x9f, 0x8b, 0xdb, 0x2f,
+	0xbf, 0x24, 0x33, 0xad, 0x92, 0x58, 0x0d, 0xe6, 0x5c, 0xc2, 0xee, 0xa9, 0x25, 0x01, 0x45, 0xa9,
+	0x29, 0xa9, 0xc9, 0xa9, 0xc5, 0xc5, 0xf9, 0x45, 0x24, 0x68, 0x74, 0xcb, 0xcc, 0x4b, 0x09, 0x2e,
+	0x4d, 0x86, 0xe8, 0x23, 0xda, 0x47, 0x96, 0x5c, 0xa2, 0xce, 0x39, 0xa9, 0x89, 0x45, 0x64, 0xd8,
+	0x69, 0xc6, 0x25, 0x14, 0x9c, 0x9d, 0x59, 0x00, 0xb7, 0x93, 0x48, 0x7d, 0x49, 0x6c, 0xe0, 0x08,
+	0x33, 0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0x07, 0x02, 0xe2, 0xbf, 0xbd, 0x01, 0x00, 0x00,
 }

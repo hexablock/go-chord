@@ -15,14 +15,17 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 	conf.Delegate = &MockDelegate{}
 	conf.StabilizeMin = time.Duration(15 * time.Millisecond)
 	conf.StabilizeMax = time.Duration(45 * time.Millisecond)
-	timeout := time.Duration(2 * time.Second)
+	timeout := time.Duration(3 * time.Second)
 	connMaxIdle := time.Duration(300 * time.Second)
 
 	ln, err := net.Listen("tcp", listen)
 	if err != nil {
 		return nil, nil, err
 	}
-	trans := NewGRPCTransport(ln, grpc.NewServer(), timeout, connMaxIdle)
+
+	opt := grpc.CustomCodec(&PayloadCodec{})
+	gserver := grpc.NewServer(opt)
+	trans := NewGRPCTransport(ln, gserver, timeout, connMaxIdle)
 
 	return conf, trans, nil
 }
@@ -83,20 +86,20 @@ func TestGRPCLeave(t *testing.T) {
 	}
 
 	// Wait for some stabilization
-	<-time.After(100 * time.Millisecond)
+	<-time.After(1500 * time.Millisecond)
 
 	// Node 1 should leave
 	r1.Leave()
 	t1.Shutdown()
 
 	// Wait for stabilization
-	<-time.After(100 * time.Millisecond)
+	<-time.After(200 * time.Millisecond)
 
 	// Verify r2 ring is still in tact
 	for _, vn := range r2.vnodes {
 		if vn.successors[0].Host != r2.config.Hostname {
 			t.Fatalf("bad successor! Got:%s:%s want: %s", vn.successors[0].Host,
-				vn.successors[0].StringID(), r2.config.Hostname)
+				vn.successors[0].String(), r2.config.Hostname)
 		}
 	}
 }

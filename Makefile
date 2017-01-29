@@ -17,3 +17,7 @@ cov:
 # Requires proto3
 protoc:
 	protoc net.proto --go_out=plugins=grpc:.
+
+flatc:
+	rm -rf fbtypes
+	flatc -g fbtypes.fbs

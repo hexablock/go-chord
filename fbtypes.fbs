@@ -1,0 +1,36 @@
+namespace fbtypes;
+
+table Vnode {
+    Id:[ubyte];
+    Host: string;
+}
+
+table VnodePair {
+    Target: Vnode;
+    Self: Vnode;
+}
+
+table VnodeIntBytes {
+    Vnode: Vnode;
+    Int: int;
+    Bytes:[ubyte];
+}
+
+table VnodeListErr {
+    Vnodes: [Vnode];
+    Err: string;
+}
+
+table VnodeErr {
+    Vnode: Vnode;
+    Err: string;
+}
+
+table BoolErr {
+    Err: string;
+    Bool: bool;
+}
+
+table String {
+    String: string;
+}

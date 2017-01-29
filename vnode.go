@@ -7,9 +7,12 @@ import (
 	"time"
 )
 
-// StringID converts the ID to a hex encoded string.  As grpc uses String() we use
-// StringID() instead.
-func (vn *Vnode) StringID() string {
+type Vnode struct {
+	Id   []byte
+	Host string
+}
+
+func (vn *Vnode) String() string {
 	return fmt.Sprintf("%x", vn.Id)
 }
 
@@ -159,7 +162,7 @@ func (vn *localVnode) notifySuccessor() error {
 			break
 		}
 		// Ensure we don't set ourselves as a successor!
-		if s == nil || s.StringID() == vn.StringID() {
+		if s == nil || s.String() == vn.String() {
 			break
 		}
 		vn.successors[idx+1] = s
@@ -267,7 +270,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		}
-		log.Printf("[ERR] Failed to contact %s. Got %s", closest.StringID(), err)
+		log.Printf("[ERR] Failed to contact %s. Got %s", closest.String(), err)
 	}
 
 	// Determine how many successors we know of
@@ -312,7 +315,7 @@ func (vn *localVnode) leave() error {
 
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
-	if vn.predecessor != nil && vn.predecessor.StringID() == p.StringID() {
+	if vn.predecessor != nil && vn.predecessor.String() == p.String() {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
@@ -327,7 +330,7 @@ func (vn *localVnode) ClearPredecessor(p *Vnode) error {
 // Used to skip a successor when a node is leaving
 func (vn *localVnode) SkipSuccessor(s *Vnode) error {
 	// Skip if we have a match
-	if vn.successors[0].StringID() == s.StringID() {
+	if vn.successors[0].String() == s.String() {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.successors[0]
