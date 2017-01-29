@@ -5,6 +5,7 @@ clean:
 
 prep:
 	@which protoc || { echo "protoc: command not found!"; exit 1; }
+	@which flatc || { echo "flatc: command not found!"; exit 1; }
 	@which glide || { echo "glide: command not found!"; exit 1; }
 
 test:
