@@ -21,7 +21,7 @@ type LocalTransport struct {
 	local  map[string]*localRPC
 }
 
-// Creates a local transport to wrap a remote transport
+// InitLocalTransport creates a local transport to wrap a remote transport
 func InitLocalTransport(remote Transport) Transport {
 	// Replace a nil transport with black hole
 	if remote == nil {

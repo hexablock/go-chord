@@ -272,40 +272,4 @@ func TestLookup(t *testing.T) {
 			}
 		}
 	}
-
-	// listvnodes
-	vns, err := r.ListVnodes(conf2.Hostname)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(vns) != conf2.NumSuccessors {
-		t.Fatal("vnode count mismatch")
-	}
-
-}
-func Test_VnodeSlice(t *testing.T) {
-	// Create a multi transport
-	ml := InitMLTransport()
-
-	// Create the initial ring
-	conf := fastConf()
-	r, err := Create(conf, ml)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	vns, _ := r.Lookup(conf.NumSuccessors, []byte("foo"))
-	uh := vns.UniqueHosts()
-	if len(uh) != 1 {
-		t.Fatal("unique host mismatch")
-	}
-
-	vh := vns.VnodesByHost()
-	v, ok := vh[uh[0]]
-	if !ok {
-		t.Fatal("missing host")
-	}
-	if len(v) != len(vns) {
-		t.Fatalf("length mismatch: %d=%d", len(vns), len(v))
-	}
 }

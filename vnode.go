@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// Vnode represents a virtual host
 type Vnode struct {
 	Id   []byte
 	Host string
@@ -20,16 +21,18 @@ func (vn *Vnode) String() string {
 func (vn *localVnode) init(idx int) {
 	// Generate an ID
 	vn.genId(uint16(idx))
-
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
-
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
 	vn.finger = make([]*Vnode, vn.ring.config.hashBits)
-
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)
+
+	conf := vn.ring.config
+	vn.ring.invokeDelegate(func() {
+		conf.Delegate.Init(&vn.Vnode)
+	})
 }
 
 // Schedules the Vnode to do regular maintenence
