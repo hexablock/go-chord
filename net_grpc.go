@@ -2,8 +2,6 @@ package chord
 
 import (
 	"fmt"
-	"log"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,48 +19,29 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	sock     net.Listener
-	server   *grpc.Server
-	lock     sync.RWMutex
-	local    map[string]*localRPC
+	lock  sync.RWMutex
+	local map[string]*localRPC
+
 	poolLock sync.Mutex
 	pool     map[string][]*rpcOutConn
+
 	shutdown int32
 	timeout  time.Duration
 	maxIdle  time.Duration
 }
 
 // NewGRPCTransport creates a new grpc transport using the provided listener and grpc server.
-func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
+func NewGRPCTransport(rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
-		sock:    sock,
-		server:  gserver,
 		local:   map[string]*localRPC{},
 		pool:    map[string][]*rpcOutConn{},
 		timeout: rpcTimeout,
 		maxIdle: connMaxIdle,
 	}
 
-	RegisterChordServer(gt.server, gt)
-
-	go gt.listen()
 	go gt.reapOld()
 
 	return gt
-}
-
-/*func (cs *GRPCTransport) Status() map[string]interface{} {
-	m := map[string]int{}
-	for h, v := range cs.pool {
-		m[h] = len(v)
-	}
-	return map[string]interface{}{"pool": m}
-}*/
-
-func (cs *GRPCTransport) listen() {
-	if err := cs.server.Serve(cs.sock); err != nil {
-		log.Println("ERR", err)
-	}
 }
 
 // Closes old outbound connections
@@ -442,7 +421,7 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *Payload) (*
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
 	// Stop grcp server
-	cs.server.GracefulStop()
+	//cs.server.GracefulStop()
 
 	// Close all the outbound
 	cs.poolLock.Lock()
