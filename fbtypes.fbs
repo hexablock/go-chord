@@ -17,8 +17,8 @@ table VnodeIntBytes {
 }
 
 table VnodeListErr {
-    Vnodes: [Vnode];
     Err: string;
+    Vnodes: [Vnode];
 }
 
 table VnodeErr {

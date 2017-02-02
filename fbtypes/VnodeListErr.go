@@ -22,8 +22,16 @@ func (rcv *VnodeListErr) Init(buf []byte, i flatbuffers.UOffsetT) {
 	rcv._tab.Pos = i
 }
 
-func (rcv *VnodeListErr) Vnodes(obj *Vnode, j int) bool {
+func (rcv *VnodeListErr) Err() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *VnodeListErr) Vnodes(obj *Vnode, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
 		x := rcv._tab.Vector(o)
 		x += flatbuffers.UOffsetT(j) * 4
@@ -38,32 +46,24 @@ func (rcv *VnodeListErr) Vnodes(obj *Vnode, j int) bool {
 }
 
 func (rcv *VnodeListErr) VnodesLength() int {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(4))
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
 		return rcv._tab.VectorLen(o)
 	}
 	return 0
 }
 
-func (rcv *VnodeListErr) Err() []byte {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
-	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
-	}
-	return nil
-}
-
 func VnodeListErrStart(builder *flatbuffers.Builder) {
 	builder.StartObject(2)
 }
+func VnodeListErrAddErr(builder *flatbuffers.Builder, Err flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(Err), 0)
+}
 func VnodeListErrAddVnodes(builder *flatbuffers.Builder, Vnodes flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(Vnodes), 0)
+	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(Vnodes), 0)
 }
 func VnodeListErrStartVnodesVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
 	return builder.StartVector(4, numElems, 4)
-}
-func VnodeListErrAddErr(builder *flatbuffers.Builder, Err flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(Err), 0)
 }
 func VnodeListErrEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

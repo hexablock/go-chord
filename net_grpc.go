@@ -120,7 +120,6 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 	cs.returnConn(out)
 
 	return deserializeBoolErr(rsp.Data)
-	//return bool(be.Bool()), nil
 }
 
 // GetPredecessor requests a vnode's predecessor
@@ -233,7 +232,7 @@ func (cs *GRPCTransport) getConn(host string) (*rpcOutConn, error) {
 	cs.poolLock.Lock()
 	if atomic.LoadInt32(&cs.shutdown) == 1 {
 		cs.poolLock.Unlock()
-		return nil, fmt.Errorf("TCP transport is shutdown")
+		return nil, fmt.Errorf("gRPC transport is shutdown")
 	}
 
 	list, ok := cs.pool[host]
@@ -323,6 +322,7 @@ func (cs *GRPCTransport) PingServe(ctx context.Context, in *Payload) (*Payload, 
 func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *Payload) (*Payload, error) {
 	target, self := deserializeVnodePair(in.Data)
 	obj, ok := cs.get(target)
+
 	var (
 		vnodes []*Vnode
 		err    error

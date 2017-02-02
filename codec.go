@@ -160,12 +160,15 @@ func deserializeVnodeListErr(data []byte) ([]*Vnode, error) {
 	for i := 0; i < l; i++ {
 		var vo fbtypes.Vnode
 		obj.Vnodes(&vo, i)
-		out[i] = &Vnode{Id: vo.IdBytes(), Host: string(vo.Host())}
+		// deserialize in the opposite order
+		out[l-i-1] = &Vnode{Id: vo.IdBytes(), Host: string(vo.Host())}
 	}
 
 	return out, nil
 }
 
+// 1 = true
+// 0 = false
 func serializeBoolErrToPayload(b bool, e error) *Payload {
 	fb := flatbuffers.NewBuilder(0)
 	if e != nil {
@@ -175,9 +178,9 @@ func serializeBoolErrToPayload(b bool, e error) *Payload {
 	} else {
 		fbtypes.BoolErrStart(fb)
 		if b {
-			fbtypes.BoolErrAddBool(fb, byte(0))
-		} else {
 			fbtypes.BoolErrAddBool(fb, byte(1))
+		} else {
+			fbtypes.BoolErrAddBool(fb, byte(0))
 		}
 	}
 
@@ -186,12 +189,14 @@ func serializeBoolErrToPayload(b bool, e error) *Payload {
 	return &Payload{Data: fb.Bytes[fb.Head():]}
 }
 
+// 1 = true
+// 0 = false
 func deserializeBoolErr(data []byte) (bool, error) {
 	be := fbtypes.GetRootAsBoolErr(data, 0)
 	if e := be.Err(); e != nil && len(e) > 0 {
 		return false, fmt.Errorf("%s", e)
 	}
-	return be.Bool() == byte(0), nil
+	return be.Bool() == byte(1), nil
 }
 
 func deserializeVnode(data []byte) *Vnode {

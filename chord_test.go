@@ -255,11 +255,11 @@ func TestLookup(t *testing.T) {
 	// Try key lookup
 	keys := [][]byte{[]byte("test"), []byte("foo"), []byte("bar")}
 	for _, k := range keys {
-		vn1, err := r.Lookup(3, k)
+		vn1, err := r.Lookup(5, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}
-		vn2, err := r2.Lookup(3, k)
+		vn2, err := r2.Lookup(5, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}

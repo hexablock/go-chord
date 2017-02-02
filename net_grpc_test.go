@@ -116,3 +116,39 @@ func TestGRPCLeave(t *testing.T) {
 	s2.Stop()
 	t2.Shutdown()
 }
+
+func TestGRPCLookup(t *testing.T) {
+	c1, _, t1, err := prepRingGrpc(21025)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	// Create initial ring
+	r1, err := Create(c1, t1)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	c2, _, t2, err := prepRingGrpc(21026)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	<-time.After(1 * time.Second)
+	// Join ring
+	r2, err := Join(c2, t2, c1.Hostname)
+	if err != nil {
+		t.Fatalf("failed to join local node! Got %s", err)
+	}
+
+	testkey := []byte("foobarboze")
+	v1, _ := r1.Lookup(5, testkey)
+
+	r2.Lookup(5, testkey)
+	v2, _ := r2.Lookup(5, testkey)
+	for i, v := range v1 {
+		if v.String() != v2[i].String() {
+			t.Error("mismatch")
+		}
+	}
+}

@@ -208,5 +208,6 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
+
 	return successors, nil
 }
