@@ -99,7 +99,7 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 	cs.returnConn(out)
 
-	return deserializeVnodeListErr(rsp.Data)
+	return DeserializeVnodeListErr(rsp.Data)
 }
 
 // Ping a Vnode, check for liveness
@@ -159,7 +159,7 @@ func (cs *GRPCTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 
 	cs.returnConn(out)
 
-	return deserializeVnodeListErr(rsp.Data)
+	return DeserializeVnodeListErr(rsp.Data)
 }
 
 // FindSuccessors given the vnode upto n successors
@@ -179,7 +179,7 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 	// Return the connection
 	cs.returnConn(out)
 
-	return deserializeVnodeListErr(rsp.Data)
+	return DeserializeVnodeListErr(rsp.Data)
 }
 
 // ClearPredecessor clears a predecessor if it matches a given vnode. Used to leave.
@@ -302,7 +302,7 @@ func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *Payload) (*Pay
 	}
 	cs.lock.RUnlock()
 
-	return &Payload{Data: serializeVnodeListErr(list, nil)}, nil
+	return &Payload{Data: SerializeVnodeListErr(list, nil)}, nil
 }
 
 // PingServe serves a ping request to a vnode.
@@ -336,7 +336,7 @@ func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *Payload) (*Payload
 		err = fmt.Errorf("target vnode not found: %s/%s", target.Host, target.Id)
 	}
 
-	return &Payload{Data: serializeVnodeListErr(vnodes, err)}, nil
+	return &Payload{Data: SerializeVnodeListErr(vnodes, err)}, nil
 }
 
 // GetPredecessorServe serves a GetPredecessor request
@@ -376,7 +376,7 @@ func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *Payload) (
 		err = fmt.Errorf("target vnode not found: %s/%s", vn.Host, vn.Id)
 	}
 
-	return &Payload{Data: serializeVnodeListErr(vnodes, err)}, nil
+	return &Payload{Data: SerializeVnodeListErr(vnodes, err)}, nil
 }
 
 // ClearPredecessorServe handles the server-side call to a clear a predecessor

@@ -115,7 +115,8 @@ func serializeStringToPayload(str string) *Payload {
 	return &Payload{Data: fb.Bytes[fb.Head():]}
 }
 
-func serializeVnodeListErr(list []*Vnode, err error) []byte {
+// SerializeVnodeListErr serializes a vnode list and error
+func SerializeVnodeListErr(list []*Vnode, err error) []byte {
 	fb := flatbuffers.NewBuilder(0)
 	if err != nil {
 		ep := fb.CreateString(err.Error())
@@ -148,7 +149,8 @@ func serializeVnodeListErr(list []*Vnode, err error) []byte {
 	return fb.Bytes[fb.Head():]
 }
 
-func deserializeVnodeListErr(data []byte) ([]*Vnode, error) {
+// DeserializeVnodeListErr de-serializes data into a vnode slice and / or error
+func DeserializeVnodeListErr(data []byte) ([]*Vnode, error) {
 	obj := fbtypes.GetRootAsVnodeListErr(data, 0)
 	if e := obj.Err(); e != nil && len(e) > 0 {
 		return nil, fmt.Errorf("%s", e)
