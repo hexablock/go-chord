@@ -63,7 +63,7 @@ func serializeVnode(fb *flatbuffers.Builder, vn *Vnode) flatbuffers.UOffsetT {
 	return fbtypes.VnodeEnd(fb)
 }
 
-func serializeVnodeErr(vn *Vnode, err error) []byte {
+func SerializeVnodeErr(vn *Vnode, err error) []byte {
 	fb := flatbuffers.NewBuilder(0)
 	if err != nil {
 		ep := fb.CreateString(err.Error())
@@ -82,7 +82,7 @@ func serializeVnodeErr(vn *Vnode, err error) []byte {
 	return fb.Bytes[fb.Head():]
 }
 
-func deserializeVnodeErr(data []byte) (*Vnode, error) {
+func DeserializeVnodeErr(data []byte) (*Vnode, error) {
 	obj := fbtypes.GetRootAsVnodeErr(data, 0)
 	if err := obj.Err(); err != nil && len(err) > 0 {
 		return nil, fmt.Errorf("%s", err)

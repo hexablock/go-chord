@@ -139,7 +139,7 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	// Return the connection
 	cs.returnConn(out)
 
-	return deserializeVnodeErr(rsp.Data)
+	return DeserializeVnodeErr(rsp.Data)
 }
 
 // Notify our successor of ourselves
@@ -355,7 +355,7 @@ func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Payload) (
 		err = fmt.Errorf("target vnode not found: %s/%x", vn.Host, vn.Id)
 	}
 
-	return &Payload{Data: serializeVnodeErr(pred, err)}, nil
+	return &Payload{Data: SerializeVnodeErr(pred, err)}, nil
 }
 
 // FindSuccessorsServe serves a FindSuccessors request
