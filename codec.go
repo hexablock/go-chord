@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/euforia/go-chord/fbtypes"
 	flatbuffers "github.com/google/flatbuffers/go"
+	"github.com/ipkg/go-chord/fbtypes"
 )
 
 // PayloadCodec is custom grpc codec used to marshal and unmarshal flatbuffers
