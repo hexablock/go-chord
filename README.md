@@ -8,11 +8,9 @@ The protocol is separated from the implementation of an underlying network
 transport or RPC mechanism. Instead Chord relies on a transport implementation.
 
 ## Transport
-A `GRPCTransport` implementation is included.  It uses flatbuffers for underlying
-data serialization for better performance.
+A `GRPCTransport` implementation is included.  It uses flatbuffers to serialize data for better performance.
 
-By using gRPC, custom RPC services can also be registered on the same server i.e.
-requiring only one listener.
+By using gRPC, custom RPC services can also be registered on the same server i.e. requiring only one listener.
 
 # Acknowledgements
 The original chord implementation is based on Armon's code available

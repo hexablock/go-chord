@@ -3,22 +3,16 @@ clean:
 	go clean -i .
 	rm -rf vendor
 
-prep:
-	@which protoc || { echo "protoc: command not found!"; exit 1; }
-	@which flatc || { echo "flatc: command not found!"; exit 1; }
-	@which glide || { echo "glide: command not found!"; exit 1; }
-
 test:
-	go test -cover ./...
+	go test -cover .
 
-cov:
-	go test -coverprofile=/tmp/coverage.out
-	go tool cover -html=/tmp/coverage.out
+deps:
+	go get -d -v .
 
 # Requires proto3
 protoc:
 	protoc net.proto --go_out=plugins=grpc:.
 
 flatc:
-	rm -rf fbtypes
-	flatc -g fbtypes.fbs
+	rm -rf fbtypes/*.go
+	flatc -g fbtypes/fbtypes.fbs
