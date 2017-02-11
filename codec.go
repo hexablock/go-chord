@@ -34,8 +34,8 @@ func (cb *PayloadCodec) String() string {
 
 func serializeVnodePairToPayload(target, self *Vnode) *Payload {
 	fb := flatbuffers.NewBuilder(0)
-	tp := serializeVnode(fb, target)
-	sp := serializeVnode(fb, self)
+	tp := SerializeVnode(fb, target)
+	sp := SerializeVnode(fb, self)
 
 	fbtypes.VnodePairStart(fb)
 	fbtypes.VnodePairAddTarget(fb, tp)
@@ -53,7 +53,7 @@ func deserializeVnodePair(data []byte) (*Vnode, *Vnode) {
 	return &Vnode{Id: t.IdBytes(), Host: string(t.Host())}, &Vnode{Id: s.IdBytes(), Host: string(s.Host())}
 }
 
-func serializeVnode(fb *flatbuffers.Builder, vn *Vnode) flatbuffers.UOffsetT {
+func SerializeVnode(fb *flatbuffers.Builder, vn *Vnode) flatbuffers.UOffsetT {
 	ip := fb.CreateByteString(vn.Id)
 	hp := fb.CreateString(vn.Host)
 
@@ -70,7 +70,7 @@ func SerializeVnodeErr(vn *Vnode, err error) []byte {
 		fbtypes.VnodeErrStart(fb)
 		fbtypes.VnodeErrAddErr(fb, ep)
 	} else if vn != nil {
-		of := serializeVnode(fb, vn)
+		of := SerializeVnode(fb, vn)
 		fbtypes.VnodeErrStart(fb)
 		fbtypes.VnodeErrAddVnode(fb, of)
 	} else {
@@ -96,7 +96,7 @@ func DeserializeVnodeErr(data []byte) (*Vnode, error) {
 
 func serializeVnodeToPayload(vn *Vnode) *Payload {
 	fb := flatbuffers.NewBuilder(0)
-	ofs := serializeVnode(fb, vn)
+	ofs := SerializeVnode(fb, vn)
 	fb.Finish(ofs)
 	return &Payload{Data: fb.Bytes[fb.Head():]}
 }
@@ -218,7 +218,7 @@ func serializeVnodeIntBytesToPayload(vn *Vnode, n int, b []byte) *Payload {
 	fb := flatbuffers.NewBuilder(0)
 
 	bp := fb.CreateByteString(b)
-	ofs := serializeVnode(fb, vn)
+	ofs := SerializeVnode(fb, vn)
 
 	fbtypes.VnodeIntBytesStart(fb)
 	fbtypes.VnodeIntBytesAddVnode(fb, ofs)
