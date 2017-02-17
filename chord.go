@@ -188,10 +188,10 @@ func (r *Ring) Shutdown() {
 }
 
 // Lookup does a key lookup for up to N successors of a key
-func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
+func (r *Ring) Lookup(n int, key []byte) ([]byte, []*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
-		return nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
+		return nil, nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
 	}
 	// Hash the key
 	h := r.config.HashFunc()
@@ -202,12 +202,12 @@ func (r *Ring) Lookup(n int, key []byte) ([]*Vnode, error) {
 	// Use the nearest node for the lookup
 	successors, err := nearest.FindSuccessors(n, keyHash)
 	if err != nil {
-		return nil, err
+		return keyHash, nil, err
 	}
 	// Trim nil successors
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
 
-	return successors, nil
+	return keyHash, successors, nil
 }

@@ -142,10 +142,10 @@ func TestGRPCLookup(t *testing.T) {
 	}
 
 	testkey := []byte("foobarboze")
-	v1, _ := r1.Lookup(5, testkey)
+	_, v1, _ := r1.Lookup(5, testkey)
 
 	r2.Lookup(5, testkey)
-	v2, _ := r2.Lookup(5, testkey)
+	_, v2, _ := r2.Lookup(5, testkey)
 	for i, v := range v1 {
 		if v.String() != v2[i].String() {
 			t.Error("mismatch")
