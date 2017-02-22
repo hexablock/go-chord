@@ -170,7 +170,7 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 		return nil, err
 	}
 
-	payload := serializeVnodeIntBytesToPayload(vn, n, k)
+	payload := SerializeVnodeIntBytesToPayload(vn, n, k)
 	rsp, err := out.client.FindSuccessorsServe(context.Background(), payload)
 	if err != nil {
 		out.conn.Close()
@@ -360,7 +360,7 @@ func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Payload) (
 
 // FindSuccessorsServe serves a FindSuccessors request
 func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *Payload) (*Payload, error) {
-	vn, n, k := deserializeVnodeIntBytes(in.Data)
+	vn, n, k := DeserializeVnodeIntBytes(in.Data)
 	obj, ok := cs.get(vn)
 
 	var (

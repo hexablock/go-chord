@@ -214,7 +214,7 @@ func deserializeErr(data []byte) error {
 	return nil
 }
 
-func serializeVnodeIntBytesToPayload(vn *Vnode, n int, b []byte) *Payload {
+func SerializeVnodeIntBytesToPayload(vn *Vnode, n int, b []byte) *Payload {
 	fb := flatbuffers.NewBuilder(0)
 
 	bp := fb.CreateByteString(b)
@@ -229,7 +229,7 @@ func serializeVnodeIntBytesToPayload(vn *Vnode, n int, b []byte) *Payload {
 	return &Payload{Data: fb.Bytes[fb.Head():]}
 }
 
-func deserializeVnodeIntBytes(buf []byte) (*Vnode, int, []byte) {
+func DeserializeVnodeIntBytes(buf []byte) (*Vnode, int, []byte) {
 	vib := fbtypes.GetRootAsVnodeIntBytes(buf, 0)
 	obj := vib.Vnode(nil)
 	return &Vnode{Id: obj.IdBytes(), Host: string(obj.Host())}, int(vib.Int()), vib.BytesBytes()
