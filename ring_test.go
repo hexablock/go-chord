@@ -12,8 +12,6 @@ type MockDelegate struct {
 	shutdown bool
 }
 
-func (m *MockDelegate) Init(local *Vnode) {
-}
 func (m *MockDelegate) NewPredecessor(local, remoteNew, remotePrev *Vnode) {
 }
 func (m *MockDelegate) Leaving(local, pred, succ *Vnode) {

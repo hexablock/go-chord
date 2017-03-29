@@ -255,11 +255,11 @@ func TestLookup(t *testing.T) {
 	// Try key lookup
 	keys := [][]byte{[]byte("test"), []byte("foo"), []byte("bar")}
 	for _, k := range keys {
-		_, vn1, err := r.Lookup(5, k)
+		_, vn1, err := r.Lookup(3, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}
-		_, vn2, err := r2.Lookup(5, k)
+		_, vn2, err := r2.Lookup(3, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}
@@ -267,9 +267,19 @@ func TestLookup(t *testing.T) {
 			t.Fatalf("result len differs!")
 		}
 		for idx := range vn1 {
-			if vn1[idx].String() != vn2[idx].String() {
+			if vn1[idx].StringID() != vn2[idx].StringID() {
 				t.Fatalf("results differ!")
 			}
 		}
 	}
+
+	// listvnodes
+	vns, err := r.ListVnodes(conf2.Hostname)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(vns) != conf2.NumSuccessors {
+		t.Fatal("vnode count mismatch")
+	}
+
 }

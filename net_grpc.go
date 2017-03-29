@@ -2,6 +2,8 @@ package chord
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,29 +21,49 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	lock  sync.RWMutex
-	local map[string]*localRPC
-
+	sock     net.Listener
+	server   *grpc.Server
+	lock     sync.RWMutex
+	local    map[string]*localRPC
 	poolLock sync.Mutex
 	pool     map[string][]*rpcOutConn
-
 	shutdown int32
 	timeout  time.Duration
 	maxIdle  time.Duration
 }
 
-// NewGRPCTransport creates a new grpc transport using the provided listener and grpc server.
-func NewGRPCTransport(rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
+// NewGRPCTransport creates a new grpc transport using the provided listener
+// and grpc server.
+func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
+		sock:    sock,
+		server:  gserver,
 		local:   map[string]*localRPC{},
 		pool:    map[string][]*rpcOutConn{},
 		timeout: rpcTimeout,
 		maxIdle: connMaxIdle,
 	}
 
+	RegisterChordServer(gt.server, gt)
+
+	go gt.listen()
 	go gt.reapOld()
 
 	return gt
+}
+
+func (cs *GRPCTransport) Status() map[string]interface{} {
+	m := map[string]int{}
+	for h, v := range cs.pool {
+		m[h] = len(v)
+	}
+	return map[string]interface{}{"pool": m}
+}
+
+func (cs *GRPCTransport) listen() {
+	if err := cs.server.Serve(cs.sock); err != nil {
+		log.Println("ERR", err)
+	}
 }
 
 // Closes old outbound connections
@@ -73,9 +95,8 @@ func (cs *GRPCTransport) reapOnce() {
 	}
 }
 
-// Register registers rpc's for a vnode
 func (cs *GRPCTransport) Register(v *Vnode, o VnodeRPC) {
-	key := v.String()
+	key := v.StringID()
 	cs.lock.Lock()
 	cs.local[key] = &localRPC{v, o}
 	cs.lock.Unlock()
@@ -88,18 +109,33 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Build payload
-	payload := serializeStringToPayload(host)
-	// Call
-	rsp, err := out.client.ListVnodesServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
+
+	// Response channels
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		le, err := out.client.ListVnodesServe(context.Background(), &StringParam{Value: host})
+		// Return the connection
+		cs.returnConn(out)
+		if err == nil {
+			if le.Err == "" {
+				respChan <- le.Vnodes
+				return
+			}
+			err = fmt.Errorf(le.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
 		return nil, err
+	case res := <-respChan:
+		return res, nil
 	}
-
-	cs.returnConn(out)
-
-	return DeserializeVnodeListErr(rsp.Data)
 }
 
 // Ping a Vnode, check for liveness
@@ -109,17 +145,34 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 		return false, err
 	}
 
-	payload := serializeVnodeToPayload(target)
-	rsp, err := out.client.PingServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
+	// Response channels
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+
+		be, err := out.client.PingServe(context.Background(), target)
+		// Return the connection
+		cs.returnConn(out)
+
+		if err == nil {
+			if be.Err == "" {
+				respChan <- be.Ok
+				return
+			}
+			err = fmt.Errorf(be.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return false, fmt.Errorf("command timed out")
+	case err := <-errChan:
 		return false, err
+	case res := <-respChan:
+		return res, nil
 	}
-
-	// Return the connection
-	cs.returnConn(out)
-
-	return deserializeBoolErr(rsp.Data)
 }
 
 // GetPredecessor requests a vnode's predecessor
@@ -130,16 +183,31 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 		return nil, err
 	}
 
-	payload := serializeVnodeToPayload(vn)
-	rsp, err := out.client.GetPredecessorServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
-		return nil, err
-	}
-	// Return the connection
-	cs.returnConn(out)
+	respChan := make(chan *Vnode, 1)
+	errChan := make(chan error, 1)
 
-	return DeserializeVnodeErr(rsp.Data)
+	go func() {
+		vnErr, err := out.client.GetPredecessorServe(context.Background(), vn)
+		// Return the connection
+		cs.returnConn(out)
+		if err == nil {
+			if vnErr.Err == "" {
+				respChan <- vnErr.VN
+				return
+			}
+			err = fmt.Errorf(vnErr.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return nil, fmt.Errorf("command timed out")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
 // Notify our successor of ourselves
@@ -150,16 +218,30 @@ func (cs *GRPCTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 		return nil, err
 	}
 
-	payload := serializeVnodePairToPayload(target, self)
-	rsp, err := out.client.NotifyServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		le, err := out.client.NotifyServe(context.Background(), &VnodePair{Target: target, Self: self})
+		cs.returnConn(out)
+		if err == nil {
+			if le.Err == "" {
+				respChan <- le.Vnodes
+				return
+			}
+			err = fmt.Errorf(le.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
 		return nil, err
+	case res := <-respChan:
+		return res, nil
 	}
-
-	cs.returnConn(out)
-
-	return DeserializeVnodeListErr(rsp.Data)
 }
 
 // FindSuccessors given the vnode upto n successors
@@ -170,19 +252,35 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 		return nil, err
 	}
 
-	payload := SerializeVnodeIntBytesToPayload(vn, n, k)
-	rsp, err := out.client.FindSuccessorsServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
-		return nil, err
-	}
-	// Return the connection
-	cs.returnConn(out)
+	respChan := make(chan []*Vnode, 1)
+	errChan := make(chan error, 1)
 
-	return DeserializeVnodeListErr(rsp.Data)
+	go func() {
+		le, err := out.client.FindSuccessorsServe(context.Background(),
+			&FindSuccReq{VN: vn, Count: int32(n), Key: k})
+		// Return the connection
+		cs.returnConn(out)
+		if err == nil {
+			if le.Err == "" {
+				respChan <- le.Vnodes
+				return
+			}
+			err = fmt.Errorf(le.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return nil, fmt.Errorf("Command timed out!")
+	case err := <-errChan:
+		return nil, err
+	case res := <-respChan:
+		return res, nil
+	}
 }
 
-// ClearPredecessor clears a predecessor if it matches a given vnode. Used to leave.
+// Clears a predecessor if it matches a given vnode. Used to leave.
 func (cs *GRPCTransport) ClearPredecessor(target, self *Vnode) error {
 	// Get a conn
 	out, err := cs.getConn(target.Host)
@@ -190,17 +288,32 @@ func (cs *GRPCTransport) ClearPredecessor(target, self *Vnode) error {
 		return err
 	}
 
-	payload := serializeVnodePairToPayload(target, self)
-	rsp, err := out.client.ClearPredecessorServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+		er, err := out.client.ClearPredecessorServe(context.Background(), &VnodePair{Target: target, Self: self})
+		// Return the connection
+		cs.returnConn(out)
+		if err == nil {
+			if er.Err == "" {
+				respChan <- true
+				return
+			}
+			err = fmt.Errorf(er.Err)
+		}
+		errChan <- err
+
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return fmt.Errorf("command timed out")
+	case err := <-errChan:
 		return err
+	case <-respChan:
+		return nil
 	}
-
-	// Return the connection
-	cs.returnConn(out)
-
-	return deserializeErr(rsp.Data)
 }
 
 // SkipSuccessor instructs a node to skip a given successor. Used to leave.
@@ -212,17 +325,31 @@ func (cs *GRPCTransport) SkipSuccessor(target, self *Vnode) error {
 		return err
 	}
 
-	payload := serializeVnodePairToPayload(target, self)
-	rsp, err := out.client.SkipSuccessorServe(context.Background(), payload)
-	if err != nil {
-		out.conn.Close()
+	respChan := make(chan bool, 1)
+	errChan := make(chan error, 1)
+
+	go func() {
+
+		er, err := out.client.SkipSuccessorServe(context.Background(), &VnodePair{Target: target, Self: self})
+		// Return the connection
+		cs.returnConn(out)
+		if err == nil {
+			if er.Err == "" {
+				respChan <- true
+			}
+			err = fmt.Errorf(er.Err)
+		}
+		errChan <- err
+	}()
+
+	select {
+	case <-time.After(cs.timeout):
+		return fmt.Errorf("command timed out")
+	case err := <-errChan:
 		return err
+	case <-respChan:
+		return nil
 	}
-
-	// Return the connection
-	cs.returnConn(out)
-
-	return deserializeErr(rsp.Data)
 }
 
 // Gets an outbound connection to a host
@@ -232,9 +359,8 @@ func (cs *GRPCTransport) getConn(host string) (*rpcOutConn, error) {
 	cs.poolLock.Lock()
 	if atomic.LoadInt32(&cs.shutdown) == 1 {
 		cs.poolLock.Unlock()
-		return nil, fmt.Errorf("gRPC transport is shutdown")
+		return nil, fmt.Errorf("TCP transport is shutdown")
 	}
-
 	list, ok := cs.pool[host]
 	if ok && len(list) > 0 {
 		out = list[len(list)-1]
@@ -242,23 +368,20 @@ func (cs *GRPCTransport) getConn(host string) (*rpcOutConn, error) {
 		cs.pool[host] = list
 	}
 	cs.poolLock.Unlock()
-
 	// Make a new connection
 	if out == nil {
-		conn, err := grpc.Dial(host, grpc.WithInsecure(), grpc.WithCodec(&PayloadCodec{}))
-		if err != nil {
-			return nil, err
+		conn, err := grpc.Dial(host, grpc.WithInsecure())
+		if err == nil {
+			return &rpcOutConn{
+				host:   host,
+				client: NewChordClient(conn),
+				conn:   conn,
+				used:   time.Now(),
+			}, nil
 		}
-
-		out = &rpcOutConn{
-			host:   host,
-			client: NewChordClient(conn),
-			conn:   conn,
-			used:   time.Now(),
-		}
+		return nil, err
 	}
-
-	// return connection
+	// return an existing connection
 	return out, nil
 }
 
@@ -272,14 +395,13 @@ func (cs *GRPCTransport) returnConn(o *rpcOutConn) {
 		o.conn.Close()
 		return
 	}
-
 	list, _ := cs.pool[o.host]
 	cs.pool[o.host] = append(list, o)
 }
 
 // Checks for a local vnode
 func (cs *GRPCTransport) get(vn *Vnode) (VnodeRPC, bool) {
-	key := vn.String()
+	key := vn.StringID()
 
 	cs.lock.RLock()
 	defer cs.lock.RUnlock()
@@ -292,137 +414,101 @@ func (cs *GRPCTransport) get(vn *Vnode) (VnodeRPC, bool) {
 }
 
 // ListVnodesServe is the server side call
-func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *Payload) (*Payload, error) {
+func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *StringParam) (*VnodeListErr, error) {
 	// Generate all the local clients
-	list := make([]*Vnode, 0, len(cs.local))
+	resp := &VnodeListErr{Vnodes: make([]*Vnode, 0, len(cs.local))}
 	// Build list
 	cs.lock.RLock()
 	for _, v := range cs.local {
-		list = append(list, v.vnode)
+		resp.Vnodes = append(resp.Vnodes, v.vnode)
 	}
 	cs.lock.RUnlock()
-
-	return &Payload{Data: SerializeVnodeListErr(list, nil)}, nil
+	return resp, nil
 }
-
-// PingServe serves a ping request to a vnode.
-func (cs *GRPCTransport) PingServe(ctx context.Context, in *Payload) (*Payload, error) {
-	vn := deserializeVnode(in.Data)
-
-	var err error
-	_, ok := cs.get(vn)
-	if !ok {
-		err = fmt.Errorf("target vnode not found: %s/%s", vn.Host, vn.Id)
-	}
-
-	return serializeBoolErrToPayload(ok, err), nil
-}
-
-// NotifyServe serves a Notify request
-func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *Payload) (*Payload, error) {
-	target, self := deserializeVnodePair(in.Data)
-	obj, ok := cs.get(target)
-
-	var (
-		vnodes []*Vnode
-		err    error
-	)
-
+func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*BoolErr, error) {
+	_, ok := cs.get(in)
 	if ok {
-		if vnodes, err = obj.Notify(self); err == nil {
-			vnodes = trimSlice(vnodes)
+		return &BoolErr{Ok: ok}, nil
+	}
+	return &BoolErr{Err: fmt.Sprintf("target vnode not found: %s/%s", in.Host, in.Id)}, nil
+}
+
+// NotifyServe the client
+func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*VnodeListErr, error) {
+	obj, ok := cs.get(in.Target)
+	resp := &VnodeListErr{}
+	if ok {
+		nodes, err := obj.Notify(in.Self)
+		if err == nil {
+			resp.Vnodes = trimSlice(nodes)
+		} else {
+			resp.Err = err.Error()
 		}
 	} else {
-		err = fmt.Errorf("target vnode not found: %s/%s", target.Host, target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
 	}
-
-	return &Payload{Data: SerializeVnodeListErr(vnodes, err)}, nil
+	return resp, nil
 }
-
-// GetPredecessorServe serves a GetPredecessor request
-func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Payload) (*Payload, error) {
-	vn := deserializeVnode(in.Data)
-	obj, ok := cs.get(vn)
-
-	var (
-		pred *Vnode
-		err  error
-	)
-
+func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*VnodeError, error) {
+	obj, ok := cs.get(in)
+	resp := &VnodeError{}
 	if ok {
-		pred, err = obj.GetPredecessor()
-	} else {
-		err = fmt.Errorf("target vnode not found: %s/%x", vn.Host, vn.Id)
-	}
-
-	return &Payload{Data: SerializeVnodeErr(pred, err)}, nil
-}
-
-// FindSuccessorsServe serves a FindSuccessors request
-func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *Payload) (*Payload, error) {
-	vn, n, k := DeserializeVnodeIntBytes(in.Data)
-	obj, ok := cs.get(vn)
-
-	var (
-		vnodes []*Vnode
-		err    error
-	)
-
-	if ok {
-		if vnodes, err = obj.FindSuccessors(n, k); err == nil {
-			vnodes = trimSlice(vnodes)
+		vn, err := obj.GetPredecessor()
+		if err == nil {
+			resp.VN = vn
+		} else {
+			resp.Err = err.Error()
 		}
 	} else {
-		err = fmt.Errorf("target vnode not found: %s/%s", vn.Host, vn.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Host, in.Id)
 	}
-
-	return &Payload{Data: SerializeVnodeListErr(vnodes, err)}, nil
+	return resp, nil
 }
-
-// ClearPredecessorServe handles the server-side call to a clear a predecessor
-func (cs *GRPCTransport) ClearPredecessorServe(ctx context.Context, in *Payload) (*Payload, error) {
-	var (
-		target, self = deserializeVnodePair(in.Data)
-		obj, ok      = cs.get(target)
-		e            string
-	)
-
+func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *FindSuccReq) (*VnodeListErr, error) {
+	obj, ok := cs.get(in.VN)
+	resp := &VnodeListErr{}
 	if ok {
-		if err := obj.ClearPredecessor(self); err != nil {
-			e = err.Error()
+		nodes, err := obj.FindSuccessors(int(in.Count), in.Key)
+		if err == nil {
+			resp.Vnodes = trimSlice(nodes)
+		} else {
+			resp.Err = err.Error()
 		}
 	} else {
-		e = fmt.Sprintf("target vnode not found: %s/%s", target.Host, target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.VN.Host, in.VN.Id)
 	}
-
-	return serializeStringToPayload(e), nil
+	return resp, nil
 }
-
-// SkipSuccessorServe handles the server-side call to skip a successor
-func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *Payload) (*Payload, error) {
-	var (
-		target, self = deserializeVnodePair(in.Data)
-		obj, ok      = cs.get(target)
-		e            string
-	)
-
+func (cs *GRPCTransport) ClearPredecessorServe(ctx context.Context, in *VnodePair) (*ErrResponse, error) {
+	obj, ok := cs.get(in.Target)
+	resp := &ErrResponse{}
 	if ok {
-		if err := obj.SkipSuccessor(self); err != nil {
-			e = err.Error()
+		if err := obj.ClearPredecessor(in.Self); err != nil {
+			resp.Err = err.Error()
 		}
 	} else {
-		e = fmt.Sprintf("target vnode not found: %s/%s", target.Host, target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
 	}
-
-	return serializeStringToPayload(e), nil
+	return resp, nil
+}
+func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) (*ErrResponse, error) {
+	obj, ok := cs.get(in.Target)
+	resp := &ErrResponse{}
+	if ok {
+		if err := obj.SkipSuccessor(in.Self); err != nil {
+			resp.Err = err.Error()
+		}
+	} else {
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
+	}
+	return resp, nil
 }
 
 // Shutdown the TCP transport
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
 	// Stop grcp server
-	//cs.server.GracefulStop()
-
+	cs.server.GracefulStop()
 	// Close all the outbound
 	cs.poolLock.Lock()
 	for _, conns := range cs.pool {

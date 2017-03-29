@@ -157,7 +157,7 @@ func TestVnodeCheckNewSuccDead(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	if vn1.successors[0].String() != "00" {
+	if vn1.successors[0].StringID() != "00" {
 		t.Fatalf("unexpected successor!")
 	}
 }

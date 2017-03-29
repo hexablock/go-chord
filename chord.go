@@ -49,7 +49,6 @@ type VnodeRPC interface {
 
 // Delegate to notify on ring events
 type Delegate interface {
-	Init(local *Vnode) // Called when a vnode is intialized
 	NewPredecessor(local, remoteNew, remotePrev *Vnode)
 	Leaving(local, pred, succ *Vnode)
 	PredecessorLeaving(local, remote *Vnode)
@@ -108,6 +107,7 @@ func DefaultConfig(hostname string) *Config {
 func Create(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
+
 	// Create and initialize a ring
 	ring := &Ring{}
 	ring.init(conf, trans)
@@ -139,6 +139,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	for _, vn := range ring.vnodes {
 		// Get the nearest remote vnode
 		nearest := nearestVnodeToKey(hosts, vn.Id)
+
 		// Query for a list of successors to this Vnode
 		succs, err := trans.FindSuccessors(nearest, conf.NumSuccessors, vn.Id)
 		if err != nil {
@@ -147,21 +148,20 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		if succs == nil || len(succs) == 0 {
 			return nil, fmt.Errorf("Failed to find successor for vnodes! Got no vnodes!")
 		}
+
 		// Assign the successors
 		for idx, s := range succs {
 			vn.successors[idx] = s
 		}
 	}
 
-	// Start delegate handler
-	if ring.config.Delegate != nil {
-		go ring.delegateHandler()
-	}
-
-	// Do a fast stabilization.  This will in turn schedule regular execution
-	for _, vn := range ring.vnodes {
-		vn.stabilize()
-	}
+	// Do not fast stabilize - This allows the joining node to initialize vnodes
+	// if needed and register services.  Performing a fast stabilization will
+	// result in in errors on downstream services as internal states and structures
+	// have not yet been initialized due to their dependency on the ring. A normal
+	// stabilization allows for services to initialize state before any calls
+	// to the delegate are made.
+	ring.schedule()
 
 	return ring, nil
 }
@@ -170,11 +170,13 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 func (r *Ring) Leave() error {
 	// Shutdown the vnodes first to avoid further stabilization runs
 	r.stopVnodes()
+
 	// Instruct each vnode to leave
 	var err error
 	for _, vn := range r.vnodes {
 		err = mergeErrors(err, vn.leave())
 	}
+
 	// Wait for the delegate callbacks to complete
 	r.stopDelegate()
 	return err
@@ -191,23 +193,35 @@ func (r *Ring) Shutdown() {
 func (r *Ring) Lookup(n int, key []byte) ([]byte, []*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
-		return nil, nil, fmt.Errorf("Cannot ask for more successors than NumSuccessors!")
+		return nil, nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
 	}
+
 	// Hash the key
 	h := r.config.HashFunc()
 	h.Write(key)
 	keyHash := h.Sum(nil)
+
 	// Find the nearest local vnode
 	nearest := r.nearestVnode(keyHash)
+
 	// Use the nearest node for the lookup
 	successors, err := nearest.FindSuccessors(n, keyHash)
 	if err != nil {
 		return keyHash, nil, err
 	}
-	// Trim nil successors
+
+	// Trim the nil successors
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
-
 	return keyHash, successors, nil
+}
+
+// ListVnodes for a given host
+func (r *Ring) ListVnodes(host string) ([]*Vnode, error) {
+	vns, err := r.transport.ListVnodes(host)
+	if err == nil {
+		return vns, nil
+	}
+	return nil, err
 }
