@@ -128,7 +128,7 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		return nil, err
 	}
 	if hosts == nil || len(hosts) == 0 {
-		return nil, fmt.Errorf("Remote host has no vnodes!")
+		return nil, fmt.Errorf("remote host has no vnodes")
 	}
 
 	// Create a ring
@@ -143,10 +143,11 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		// Query for a list of successors to this Vnode
 		succs, err := trans.FindSuccessors(nearest, conf.NumSuccessors, vn.Id)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to find successor for vnodes! Got %s", err)
+			//return nil, fmt.Errorf("Failed to find successor for vnodes! Got %s", err)
+			return nil, err
 		}
 		if succs == nil || len(succs) == 0 {
-			return nil, fmt.Errorf("Failed to find successor for vnodes! Got no vnodes!")
+			return nil, fmt.Errorf("successor vnodes not found")
 		}
 
 		// Assign the successors
@@ -155,12 +156,15 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		}
 	}
 
-	// Do not fast stabilize - This allows the joining node to initialize vnodes
-	// if needed and register services.  Performing a fast stabilization will
-	// result in in errors on downstream services as internal states and structures
-	// have not yet been initialized due to their dependency on the ring. A normal
-	// stabilization allows for services to initialize state before any calls
-	// to the delegate are made.
+	// Fast stabilize
+	// Start delegate handler
+	// if ring.config.Delegate != nil {
+	// 	go ring.delegateHandler()
+	// }
+	// Do a fast stabilization, will schedule regular execution
+	// for _, vn := range ring.vnodes {
+	// 	vn.stabilize()
+	// }
 	ring.schedule()
 
 	return ring, nil
@@ -189,39 +193,38 @@ func (r *Ring) Shutdown() {
 	r.stopDelegate()
 }
 
-// Lookup does a key lookup for up to N successors of a key
-func (r *Ring) Lookup(n int, key []byte) ([]byte, []*Vnode, error) {
+// LookupHash does a lookup for up to N successors of a hash.  It returns the predecessor and up
+// to N successors. The hash size must match the hash function used when init'ing the ring.
+func (r *Ring) LookupHash(n int, hash []byte) (*Vnode, []*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
 		return nil, nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
 	}
 
-	// Hash the key
-	h := r.config.HashFunc()
-	h.Write(key)
-	keyHash := h.Sum(nil)
-
 	// Find the nearest local vnode
-	nearest := r.nearestVnode(keyHash)
-
+	nearest := r.nearestVnode(hash)
+	pred := nearest.Vnode
 	// Use the nearest node for the lookup
-	successors, err := nearest.FindSuccessors(n, keyHash)
+	successors, err := nearest.FindSuccessors(n, hash)
 	if err != nil {
-		return keyHash, nil, err
+		return &pred, nil, err
 	}
 
 	// Trim the nil successors
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
-	return keyHash, successors, nil
+	return &pred, successors, nil
 }
 
-// ListVnodes for a given host
-func (r *Ring) ListVnodes(host string) ([]*Vnode, error) {
-	vns, err := r.transport.ListVnodes(host)
-	if err == nil {
-		return vns, nil
-	}
-	return nil, err
+// Lookup does a lookup for up to N successors on the hash of a key.  It returns the hash of the key used to
+// perform the lookup, the closest vnode and up to N successors.
+func (r *Ring) Lookup(n int, key []byte) ([]byte, *Vnode, []*Vnode, error) {
+	// Hash the key
+	h := r.config.HashFunc()
+	h.Write(key)
+	kh := h.Sum(nil)
+
+	nearest, succs, err := r.LookupHash(n, kh)
+	return kh, nearest, succs, err
 }
