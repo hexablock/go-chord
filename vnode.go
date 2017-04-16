@@ -2,10 +2,20 @@ package chord
 
 import (
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 )
+
+// MarshalJSON is a custom JSON marshaller
+func (vn *Vnode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Id":   hex.EncodeToString(vn.Id),
+		"Host": vn.Host,
+	})
+}
 
 // StringID converts the ID to a hex encoded string.  As grpc uses String() we use
 // StringID() instead.
