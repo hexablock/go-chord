@@ -25,7 +25,6 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	sock     net.Listener
 	server   *grpc.Server
 	lock     sync.RWMutex
 	local    map[string]*localRPC
@@ -40,7 +39,6 @@ type GRPCTransport struct {
 // and grpc server.
 func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
-		sock:    sock,
 		server:  gserver,
 		local:   map[string]*localRPC{},
 		pool:    map[string][]*rpcOutConn{},
@@ -53,14 +51,6 @@ func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connM
 	go gt.reapOld()
 
 	return gt
-}
-
-func (cs *GRPCTransport) Status() map[string]interface{} {
-	m := map[string]int{}
-	for h, v := range cs.pool {
-		m[h] = len(v)
-	}
-	return map[string]interface{}{"pool": m}
 }
 
 // Closes old outbound connections
@@ -92,6 +82,7 @@ func (cs *GRPCTransport) reapOnce() {
 	}
 }
 
+// Register vnode rpc's for a vnode.
 func (cs *GRPCTransport) Register(v *Vnode, o VnodeRPC) {
 	key := v.StringID()
 	cs.lock.Lock()
@@ -504,7 +495,7 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 // Shutdown the TCP transport
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
-	// Stop grcp server
+	// Stop grpc server
 	cs.server.GracefulStop()
 	// Close all the outbound
 	cs.poolLock.Lock()
