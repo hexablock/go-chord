@@ -1,8 +1,8 @@
 package chord
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -10,6 +10,10 @@ import (
 
 	context "golang.org/x/net/context"
 	"google.golang.org/grpc"
+)
+
+var (
+	errTimedOut = errors.New("timed out")
 )
 
 type rpcOutConn struct {
@@ -46,7 +50,6 @@ func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connM
 
 	RegisterChordServer(gt.server, gt)
 
-	go gt.listen()
 	go gt.reapOld()
 
 	return gt
@@ -58,12 +61,6 @@ func (cs *GRPCTransport) Status() map[string]interface{} {
 		m[h] = len(v)
 	}
 	return map[string]interface{}{"pool": m}
-}
-
-func (cs *GRPCTransport) listen() {
-	if err := cs.server.Serve(cs.sock); err != nil {
-		log.Println("ERR", err)
-	}
 }
 
 // Closes old outbound connections
@@ -130,7 +127,7 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 	select {
 	case <-time.After(cs.timeout):
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, errTimedOut
 	case err := <-errChan:
 		return nil, err
 	case res := <-respChan:
@@ -167,7 +164,7 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 
 	select {
 	case <-time.After(cs.timeout):
-		return false, fmt.Errorf("command timed out")
+		return false, errTimedOut
 	case err := <-errChan:
 		return false, err
 	case res := <-respChan:
@@ -202,7 +199,7 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 
 	select {
 	case <-time.After(cs.timeout):
-		return nil, fmt.Errorf("command timed out")
+		return nil, errTimedOut
 	case err := <-errChan:
 		return nil, err
 	case res := <-respChan:
@@ -236,7 +233,7 @@ func (cs *GRPCTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 
 	select {
 	case <-time.After(cs.timeout):
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, errTimedOut
 	case err := <-errChan:
 		return nil, err
 	case res := <-respChan:
@@ -272,7 +269,7 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 
 	select {
 	case <-time.After(cs.timeout):
-		return nil, fmt.Errorf("Command timed out!")
+		return nil, errTimedOut
 	case err := <-errChan:
 		return nil, err
 	case res := <-respChan:
@@ -280,7 +277,7 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 	}
 }
 
-// Clears a predecessor if it matches a given vnode. Used to leave.
+// ClearPredecessor clears a predecessor if it matches a given vnode. Used to leave.
 func (cs *GRPCTransport) ClearPredecessor(target, self *Vnode) error {
 	// Get a conn
 	out, err := cs.getConn(target.Host)
@@ -308,7 +305,7 @@ func (cs *GRPCTransport) ClearPredecessor(target, self *Vnode) error {
 
 	select {
 	case <-time.After(cs.timeout):
-		return fmt.Errorf("command timed out")
+		return errTimedOut
 	case err := <-errChan:
 		return err
 	case <-respChan:
@@ -344,7 +341,7 @@ func (cs *GRPCTransport) SkipSuccessor(target, self *Vnode) error {
 
 	select {
 	case <-time.After(cs.timeout):
-		return fmt.Errorf("command timed out")
+		return errTimedOut
 	case err := <-errChan:
 		return err
 	case <-respChan:
