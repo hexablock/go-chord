@@ -156,16 +156,16 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 		}
 	}
 
-	// Fast stabilize
 	// Start delegate handler
-	// if ring.config.Delegate != nil {
-	// 	go ring.delegateHandler()
-	// }
+	if ring.config.Delegate != nil {
+		go ring.delegateHandler()
+	}
 	// Do a fast stabilization, will schedule regular execution
-	// for _, vn := range ring.vnodes {
-	// 	vn.stabilize()
-	// }
-	ring.schedule()
+	for _, vn := range ring.vnodes {
+		vn.stabilize()
+	}
+
+	//ring.schedule()
 
 	return ring, nil
 }

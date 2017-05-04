@@ -3,7 +3,6 @@ package chord
 import (
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,7 +36,7 @@ type GRPCTransport struct {
 
 // NewGRPCTransport creates a new grpc transport using the provided listener
 // and grpc server.
-func NewGRPCTransport(sock net.Listener, gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
+func NewGRPCTransport(gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
 		server:  gserver,
 		local:   map[string]*localRPC{},
@@ -495,7 +494,10 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 // Shutdown the TCP transport
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
-	// Stop grpc server
+
+	// TODO: remove this logic.  This should be handled by the entity that
+	// instantiated the grpc instance.
+	// Drain and stop grpc server
 	cs.server.GracefulStop()
 	// Close all the outbound
 	cs.poolLock.Lock()

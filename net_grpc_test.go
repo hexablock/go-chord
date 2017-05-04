@@ -23,7 +23,7 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 		return nil, nil, err
 	}
 	gserver := grpc.NewServer()
-	trans := NewGRPCTransport(ln, gserver, timeout, connMaxIdle)
+	trans := NewGRPCTransport(gserver, timeout, connMaxIdle)
 	go gserver.Serve(ln)
 
 	return conf, trans, nil
