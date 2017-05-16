@@ -417,7 +417,7 @@ func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*BoolErr, er
 	if ok {
 		return &BoolErr{Ok: ok}, nil
 	}
-	return &BoolErr{Err: fmt.Sprintf("target vnode not found: %s/%s", in.Host, in.Id)}, nil
+	return &BoolErr{Err: fmt.Sprintf("target vnode not found: %s/%x", in.Host, in.Id)}, nil
 }
 
 // NotifyServe the client
@@ -432,7 +432,7 @@ func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*Vnode
 			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
 	return resp, nil
 }
@@ -447,7 +447,7 @@ func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*V
 			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Host, in.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Host, in.Id)
 	}
 	return resp, nil
 }
@@ -462,7 +462,7 @@ func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *FindSuccRe
 			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.VN.Host, in.VN.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.VN.Host, in.VN.Id)
 	}
 	return resp, nil
 }
@@ -474,7 +474,7 @@ func (cs *GRPCTransport) ClearPredecessorServe(ctx context.Context, in *VnodePai
 			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
 	return resp, nil
 }
@@ -486,7 +486,7 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%s", in.Target.Host, in.Target.Id)
+		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
 	return resp, nil
 }
