@@ -27,11 +27,11 @@ func (ml *MultiLocalTrans) ListVnodes(host string) ([]*Vnode, error) {
 }
 
 // Ping a Vnode, check for liveness
-func (ml *MultiLocalTrans) Ping(v *Vnode) (bool, error) {
+func (ml *MultiLocalTrans) Ping(self, v *Vnode) (bool, error) {
 	if local, ok := ml.hosts[v.Host]; ok {
-		return local.Ping(v)
+		return local.Ping(self, v)
 	}
-	return ml.remote.Ping(v)
+	return ml.remote.Ping(self, v)
 }
 
 // Request a nodes predecessor

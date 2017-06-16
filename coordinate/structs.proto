@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package coordinate;
+
+message Coordinate {
+    repeated double Vec = 1;
+    double Error = 2;
+    double Adjustment = 3;
+    double Height = 4;
+}

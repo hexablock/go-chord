@@ -38,8 +38,9 @@ func makeRing() *Ring {
 		},
 	}
 
-	ring := &Ring{}
-	ring.init(conf, nil)
+	ring, _ := initializeRing(conf, nil)
+	//ring := &Ring{}
+	//ring.init(conf, nil)
 	return ring
 }
 

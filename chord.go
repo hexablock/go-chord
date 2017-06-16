@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"hash"
 	"time"
+
+	"github.com/hexablock/go-chord/coordinate"
 )
 
 // Transport implements the methods needed for a Chord ring
@@ -17,7 +19,7 @@ type Transport interface {
 	ListVnodes(string) ([]*Vnode, error)
 
 	// Ping a Vnode, check for liveness
-	Ping(*Vnode) (bool, error)
+	Ping(self, target *Vnode) (bool, error)
 
 	// Request a nodes predecessor
 	GetPredecessor(*Vnode) (*Vnode, error)
@@ -45,6 +47,8 @@ type VnodeRPC interface {
 	FindSuccessors(int, []byte) ([]*Vnode, error)
 	ClearPredecessor(*Vnode) error
 	SkipSuccessor(*Vnode) error
+	GetCoordinate() *coordinate.Coordinate
+	UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error)
 }
 
 // Delegate to notify on ring events
@@ -87,15 +91,16 @@ func (meta Meta) UnmarshalBinary(b []byte) error {
 
 // Config for Chord nodes
 type Config struct {
-	Hostname      string           // Local host name
-	Meta          Meta             // User defined metadata
-	NumVnodes     int              // Number of vnodes per physical node
-	HashFunc      func() hash.Hash `json:"-"` // Hash function to use
-	StabilizeMin  time.Duration    // Minimum stabilization time
-	StabilizeMax  time.Duration    // Maximum stabilization time
-	NumSuccessors int              // Number of successors to maintain
-	Delegate      Delegate         `json:"-"` // Invoked to handle ring events
-	hashBits      int              // Bit size of the hash function
+	Hostname          string           // Local host name
+	Meta              Meta             // User defined metadata
+	NumVnodes         int              // Number of vnodes per physical node
+	HashFunc          func() hash.Hash `json:"-"` // Hash function to use
+	StabilizeMin      time.Duration    // Minimum stabilization time
+	StabilizeMax      time.Duration    // Maximum stabilization time
+	NumSuccessors     int              // Number of successors to maintain
+	Delegate          Delegate         `json:"-"` // Invoked to handle ring events
+	DelegateQueueSize int              // Number of delegate calls to hold in the queue
+	hashBits          int              // Bit size of the hash function
 }
 
 // Represents a local Vnode
@@ -112,36 +117,54 @@ type localVnode struct {
 
 // Ring stores the state required for a Chord ring
 type Ring struct {
-	config     *Config
-	transport  Transport
-	vnodes     []*localVnode
-	delegateCh chan func()
-	shutdown   chan bool
+	config      *Config
+	transport   Transport
+	vnodes      []*localVnode
+	delegateCh  chan func()
+	coordClient *coordinate.Client // vivaldi coordinate client
+	shutdown    chan bool
 }
 
 // DefaultConfig returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
 	return &Config{
-		Hostname:      hostname,
-		Meta:          make(Meta),
-		NumVnodes:     8,
-		HashFunc:      sha1.New, // sha1
-		StabilizeMin:  time.Duration(15 * time.Second),
-		StabilizeMax:  time.Duration(45 * time.Second),
-		NumSuccessors: 8,
-		Delegate:      nil,
-		hashBits:      160, // 160bit hash function for sha1
+		Hostname:          hostname,
+		Meta:              make(Meta),
+		NumVnodes:         8,
+		HashFunc:          sha1.New, // sha1
+		StabilizeMin:      time.Duration(15 * time.Second),
+		StabilizeMax:      time.Duration(45 * time.Second),
+		NumSuccessors:     8,
+		Delegate:          nil,
+		DelegateQueueSize: 32,
+		hashBits:          160, // 160bit hash function for sha1
 	}
+}
+
+// This is a helper function used by Create and Join.  It sets the hash bits in the config, inits
+// the coordinate client, and finally initializes the ring
+func initializeRing(conf *Config, trans Transport) (*Ring, error) {
+	// Initialize the hash bits
+	conf.hashBits = conf.HashFunc().Size() * 8
+	// Initialize vivaldi coordinate client
+	coord, err := coordinate.NewClient(coordinate.DefaultConfig())
+	if err != nil {
+		return nil, err
+	}
+	// Initialize a ring
+	ring := &Ring{coordClient: coord}
+	ring.init(conf, trans)
+
+	return ring, nil
 }
 
 // Create a new Chord ring given the config and transport
 func Create(conf *Config, trans Transport) (*Ring, error) {
-	// Initialize the hash bits
-	conf.hashBits = conf.HashFunc().Size() * 8
+	ring, err := initializeRing(conf, trans)
+	if err != nil {
+		return nil, err
+	}
 
-	// Create and initialize a ring
-	ring := &Ring{}
-	ring.init(conf, trans)
 	ring.setLocalSuccessors()
 	ring.schedule()
 
@@ -150,9 +173,6 @@ func Create(conf *Config, trans Transport) (*Ring, error) {
 
 // Join an existing Chord ring
 func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
-	// Initialize the hash bits
-	conf.hashBits = conf.HashFunc().Size() * 8
-
 	// Request a list of Vnodes from the remote host
 	hosts, err := trans.ListVnodes(existing)
 	if err != nil {
@@ -161,10 +181,11 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	if hosts == nil || len(hosts) == 0 {
 		return nil, fmt.Errorf("remote host has no vnodes")
 	}
-
-	// Create a ring
-	ring := &Ring{}
-	ring.init(conf, trans)
+	// Initialize the ring
+	ring, err := initializeRing(conf, trans)
+	if err != nil {
+		return nil, err
+	}
 
 	// Acquire a live successor for each Vnode
 	for _, vn := range ring.vnodes {

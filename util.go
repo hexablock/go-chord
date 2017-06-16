@@ -75,18 +75,16 @@ func powerOffset(id []byte, exp int, mod int) []byte {
 func max(a, b int) int {
 	if a >= b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 // min returns the min of two ints
 func min(a, b int) int {
 	if a <= b {
 		return a
-	} else {
-		return b
 	}
+	return b
 }
 
 // Returns the vnode nearest a key

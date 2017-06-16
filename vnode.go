@@ -4,9 +4,17 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/hexablock/go-chord/coordinate"
+)
+
+var (
+	errAllKnownSuccDead      = errors.New("all known successors dead")
+	errExhaustedAllPredNodes = errors.New("exhausted all preceeding nodes")
 )
 
 // MarshalJSON is a custom JSON marshaller
@@ -26,7 +34,7 @@ func (vn *Vnode) StringID() string {
 // Initializes a local vnode
 func (vn *localVnode) init(idx int) {
 	// Generate an ID
-	vn.genId(uint16(idx))
+	vn.genID(uint16(idx))
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
 	// Try to set binary metadata
@@ -47,7 +55,7 @@ func (vn *localVnode) schedule() {
 }
 
 // Generates an ID for the node
-func (vn *localVnode) genId(idx uint16) {
+func (vn *localVnode) genID(idx uint16) {
 	// Use the hash funciton
 	conf := vn.ring.config
 	hash := conf.HashFunc()
@@ -106,16 +114,16 @@ CHECK_NEW_SUC:
 	if succ == nil {
 		panic("Node has no successor!")
 	}
-	maybe_suc, err := trans.GetPredecessor(succ)
+	maybeSuc, err := trans.GetPredecessor(succ)
 	if err != nil {
 		// Check if we have succ list, try to contact next live succ
 		known := vn.knownSuccessors()
 		if known > 1 {
 			for i := 0; i < known; i++ {
-				if alive, _ := trans.Ping(vn.successors[0]); !alive {
+				if alive, _ := trans.Ping(&vn.Vnode, vn.successors[0]); !alive {
 					// Don't eliminate the last successor we know of
 					if i+1 == known {
-						return fmt.Errorf("All known successors dead!")
+						return errAllKnownSuccDead
 					}
 
 					// Advance the successors list past the dead one
@@ -131,17 +139,27 @@ CHECK_NEW_SUC:
 	}
 
 	// Check if we should replace our successor
-	if maybe_suc != nil && between(vn.Id, succ.Id, maybe_suc.Id) {
+	if maybeSuc != nil && between(vn.Id, succ.Id, maybeSuc.Id) {
 		// Check if new successor is alive before switching
-		alive, err := trans.Ping(maybe_suc)
+		alive, err := trans.Ping(&vn.Vnode, maybeSuc)
 		if alive && err == nil {
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
-			vn.successors[0] = maybe_suc
+			vn.successors[0] = maybeSuc
 		} else {
 			return err
 		}
 	}
 	return nil
+}
+
+func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
+	name := remote.Host
+	return vn.ring.coordClient.Update(name, coord, rtt)
+}
+
+// GetCoordinate returns the vivaldi coordinates for this Vnode
+func (vn *localVnode) GetCoordinate() *coordinate.Coordinate {
+	return vn.ring.coordClient.GetCoordinate()
 }
 
 // RPC: Invoked to return out predecessor
@@ -153,19 +171,19 @@ func (vn *localVnode) GetPredecessor() (*Vnode, error) {
 func (vn *localVnode) notifySuccessor() error {
 	// Notify successor
 	succ := vn.successors[0]
-	succ_list, err := vn.ring.transport.Notify(succ, &vn.Vnode)
+	succList, err := vn.ring.transport.Notify(succ, &vn.Vnode)
 	if err != nil {
 		return err
 	}
 
 	// Trim the successors list if too long
-	max_succ := vn.ring.config.NumSuccessors
-	if len(succ_list) > max_succ-1 {
-		succ_list = succ_list[:max_succ-1]
+	maxSucc := vn.ring.config.NumSuccessors
+	if len(succList) > maxSucc-1 {
+		succList = succList[:maxSucc-1]
 	}
 
 	// Update local successors list
-	for idx, s := range succ_list {
+	for idx, s := range succList {
 		if s == nil {
 			break
 		}
@@ -178,18 +196,18 @@ func (vn *localVnode) notifySuccessor() error {
 	return nil
 }
 
-// RPC: Notify is invoked when a Vnode gets notified
-func (vn *localVnode) Notify(maybe_pred *Vnode) ([]*Vnode, error) {
+// Notify is invoked when a Vnode gets notified
+func (vn *localVnode) Notify(maybePred *Vnode) ([]*Vnode, error) {
 	// Check if we should update our predecessor
-	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybe_pred.Id) {
+	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybePred.Id) {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
 		vn.ring.invokeDelegate(func() {
-			conf.Delegate.NewPredecessor(&vn.Vnode, maybe_pred, old)
+			conf.Delegate.NewPredecessor(&vn.Vnode, maybePred, old)
 		})
 
-		vn.predecessor = maybe_pred
+		vn.predecessor = maybePred
 	}
 
 	// Return our successors list
@@ -243,7 +261,7 @@ func (vn *localVnode) fixFingerTable() error {
 func (vn *localVnode) checkPredecessor() error {
 	// Check predecessor
 	if vn.predecessor != nil {
-		res, err := vn.ring.transport.Ping(vn.predecessor)
+		res, err := vn.ring.transport.Ping(&vn.Vnode, vn.predecessor)
 		if err != nil {
 			return err
 		}
@@ -296,7 +314,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 	}
 
 	// Checked all closer nodes and our successors!
-	return nil, fmt.Errorf("Exhausted all preceeding nodes!")
+	return nil, errExhaustedAllPredNodes
 }
 
 // Instructs the vnode to leave

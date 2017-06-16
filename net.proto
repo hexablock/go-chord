@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package chord;
 
+import "github.com/hexablock/go-chord/coordinate/structs.proto";
+
 service chord {
     rpc ListVnodesServe(StringParam) returns (VnodeList) {}
-    rpc PingServe(Vnode) returns (Bool) {}
+    rpc PingServe(VnodePair) returns (Response) {}
     rpc NotifyServe(VnodePair) returns (VnodeList) {}
     rpc GetPredecessorServe(Vnode) returns (Vnode) {}
     rpc FindSuccessorsServe(FindSuccReq) returns (VnodeList) {}
@@ -18,6 +20,12 @@ message Vnode {
     bytes meta = 3;
 }
 
+// Generic response
+message Response {
+    coordinate.Coordinate Coordinate = 1;
+    bool Ok = 2;
+}
+
 message VnodeList {
     repeated Vnode vnodes = 1;
 }
@@ -28,10 +36,6 @@ message FindSuccReq {
     bytes key = 3;
 }
 
-message Bool {
-    bool ok = 1;
-}
-
 message StringParam {
     string value = 1;
 }
@@ -39,8 +43,4 @@ message StringParam {
 message VnodePair {
     Vnode target = 1;
     Vnode self = 2;
-}
-
-// Generic response
-message Response {
 }

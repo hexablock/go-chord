@@ -3,6 +3,7 @@ package chord
 import (
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -124,25 +125,28 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	}
 }
 
-// Ping a Vnode, check for liveness
-func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
+// Ping a Vnode, check for liveness.  self is the caller Vnode so rtt's can be determined from each
+// vnode's perspective.
+func (cs *GRPCTransport) Ping(self, target *Vnode) (bool, error) {
 	out, err := cs.getConn(target.Host)
 	if err != nil {
 		return false, err
 	}
 
 	// Response channels
-	respChan := make(chan bool, 1)
+	respChan := make(chan *Response, 1)
 	errChan := make(chan error, 1)
+	// Start time to calculate RTT
+	start := time.Now()
 
 	go func() {
+		resp, err := out.client.PingServe(context.Background(), &VnodePair{Self: self, Target: target})
 
-		be, err := out.client.PingServe(context.Background(), target)
 		// Return the connection
 		cs.returnConn(out)
 
 		if err == nil {
-			respChan <- be.Ok
+			respChan <- resp
 		} else {
 			errChan <- err
 		}
@@ -154,8 +158,16 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 		return false, errTimedOut
 	case err := <-errChan:
 		return false, err
-	case res := <-respChan:
-		return res, nil
+	case resp := <-respChan:
+		// Get RTT
+		rtt := time.Since(start)
+		// Update coordinates
+		obj, _ := cs.get(self)
+		if _, err := obj.UpdateCoordinate(target, resp.Coordinate, rtt); err != nil {
+			log.Printf("[ERROR] Failed to update coordinates for %s: %v", target.Host, err)
+		}
+
+		return resp.Ok, nil
 	}
 }
 
@@ -406,12 +418,13 @@ func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *StringParam) (
 }
 
 // PingServe serves a ping request
-func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*Bool, error) {
-	_, ok := cs.get(in)
+func (cs *GRPCTransport) PingServe(ctx context.Context, in *VnodePair) (*Response, error) {
+	target := in.Target
+	obj, ok := cs.get(target)
 	if ok {
-		return &Bool{Ok: ok}, nil
+		return &Response{Coordinate: obj.GetCoordinate(), Ok: ok}, nil
 	}
-	return &Bool{}, fmt.Errorf("target vnode not found: %s/%x", in.Host, in.Id)
+	return &Response{}, fmt.Errorf("target vnode not found: %s/%x", target.Host, target.Id)
 }
 
 // NotifyServe serves a notify request

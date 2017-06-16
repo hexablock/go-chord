@@ -149,11 +149,11 @@ func TestClosest(t *testing.T) {
 	a := &Vnode{Id: []byte{128}}
 	b := &Vnode{Id: []byte{32}}
 	k := []byte{45}
-	c := closest_preceeding_vnode(a, b, k, 8)
+	c := closestPreceedingVnode(a, b, k, 8)
 	if c != b {
 		t.Fatalf("expect b to be closer!")
 	}
-	c = closest_preceeding_vnode(b, a, k, 8)
+	c = closestPreceedingVnode(b, a, k, 8)
 	if c != b {
 		t.Fatalf("expect b to be closer!")
 	}

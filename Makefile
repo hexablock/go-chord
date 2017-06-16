@@ -16,4 +16,5 @@ cov:
 
 # Requires proto3
 protoc:
-	protoc net.proto --go_out=plugins=grpc:.
+	protoc coordinate/structs.proto --go_out=plugins=grpc:.
+	protoc net.proto -I ./ -I ../../../ --go_out=plugins=grpc:.

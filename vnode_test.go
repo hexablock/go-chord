@@ -50,7 +50,7 @@ func TestGenId(t *testing.T) {
 	vn := makeVnode()
 	var ids [][]byte
 	for i := 0; i < 16; i++ {
-		vn.genId(uint16(i))
+		vn.genID(uint16(i))
 		ids = append(ids, vn.Id)
 	}
 
@@ -209,7 +209,7 @@ func TestVnodeCheckNewSuccAllDeadAlternates(t *testing.T) {
 	(r.transport.(*LocalTransport)).Deregister(&vn3.Vnode)
 
 	// Should get an error
-	if err := vn1.checkNewSuccessor(); err.Error() != "All known successors dead!" {
+	if err := vn1.checkNewSuccessor(); err != errAllKnownSuccDead {
 		t.Fatalf("unexpected err %s", err)
 	}
 

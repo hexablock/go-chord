@@ -11,7 +11,8 @@ func TestRandStabilize(t *testing.T) {
 	max := time.Duration(30 * time.Second)
 	conf := &Config{
 		StabilizeMin: min,
-		StabilizeMax: max}
+		StabilizeMax: max,
+	}
 
 	var times []time.Duration
 	for i := 0; i < 1000; i++ {
@@ -29,7 +30,7 @@ func TestRandStabilize(t *testing.T) {
 	for idx, val := range times {
 		for i := 0; i < len(times); i++ {
 			if idx != i && times[i] == val {
-				collisions += 1
+				collisions++
 			}
 		}
 	}

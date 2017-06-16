@@ -11,7 +11,7 @@ func (r *Ring) init(conf *Config, trans Transport) {
 	r.config = conf
 	r.vnodes = make([]*localVnode, conf.NumVnodes)
 	r.transport = InitLocalTransport(trans)
-	r.delegateCh = make(chan func(), 32)
+	r.delegateCh = make(chan func(), conf.DelegateQueueSize)
 
 	// Initializes the vnodes
 	for i := 0; i < conf.NumVnodes; i++ {
