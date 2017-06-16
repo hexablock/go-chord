@@ -27,9 +27,10 @@ func (vn *Vnode) StringID() string {
 func (vn *localVnode) init(idx int) {
 	// Generate an ID
 	vn.genId(uint16(idx))
-
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
+	// Try to set binary metadata
+	vn.Meta, _ = vn.ring.config.Meta.MarshalBinary()
 
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)

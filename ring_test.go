@@ -32,6 +32,10 @@ func makeRing() *Ring {
 		hashBits:      160,
 		StabilizeMin:  time.Second,
 		StabilizeMax:  5 * time.Second,
+		Meta: Meta{
+			"meta1": []byte("value1"),
+			"meta2": []byte("value2"),
+		},
 	}
 
 	ring := &Ring{}
@@ -63,6 +67,9 @@ func TestRingInit(t *testing.T) {
 		}
 		if ring.vnodes[i].Id == nil {
 			t.Fatalf("ID not initialized!")
+		}
+		if ring.vnodes[i].Meta == nil {
+			t.Fatal("Meta not initialized")
 		}
 	}
 }

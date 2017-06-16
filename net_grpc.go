@@ -105,14 +105,13 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 		le, err := out.client.ListVnodesServe(context.Background(), &StringParam{Value: host})
 		// Return the connection
 		cs.returnConn(out)
+
 		if err == nil {
-			if le.Err == "" {
-				respChan <- le.Vnodes
-				return
-			}
-			err = fmt.Errorf(le.Err)
+			respChan <- le.Vnodes
+		} else {
+			errChan <- err
 		}
-		errChan <- err
+
 	}()
 
 	select {
@@ -143,13 +142,11 @@ func (cs *GRPCTransport) Ping(target *Vnode) (bool, error) {
 		cs.returnConn(out)
 
 		if err == nil {
-			if be.Err == "" {
-				respChan <- be.Ok
-				return
-			}
-			err = fmt.Errorf(be.Err)
+			respChan <- be.Ok
+		} else {
+			errChan <- err
 		}
-		errChan <- err
+
 	}()
 
 	select {
@@ -173,19 +170,19 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 	respChan := make(chan *Vnode, 1)
 	errChan := make(chan error, 1)
 
-	go func() {
-		vnErr, err := out.client.GetPredecessorServe(context.Background(), vn)
+	go func(vnode *Vnode) {
+		//
+		vnd, err := out.client.GetPredecessorServe(context.Background(), vnode)
 		// Return the connection
 		cs.returnConn(out)
+
 		if err == nil {
-			if vnErr.Err == "" {
-				respChan <- vnErr.VN
-				return
-			}
-			err = fmt.Errorf(vnErr.Err)
+			respChan <- vnd
+		} else {
+			errChan <- err
 		}
-		errChan <- err
-	}()
+
+	}(vn)
 
 	select {
 	case <-time.After(cs.timeout):
@@ -211,14 +208,13 @@ func (cs *GRPCTransport) Notify(target, self *Vnode) ([]*Vnode, error) {
 	go func() {
 		le, err := out.client.NotifyServe(context.Background(), &VnodePair{Target: target, Self: self})
 		cs.returnConn(out)
+
 		if err == nil {
-			if le.Err == "" {
-				respChan <- le.Vnodes
-				return
-			}
-			err = fmt.Errorf(le.Err)
+			respChan <- le.Vnodes
+		} else {
+			errChan <- err
 		}
-		errChan <- err
+
 	}()
 
 	select {
@@ -243,18 +239,17 @@ func (cs *GRPCTransport) FindSuccessors(vn *Vnode, n int, k []byte) ([]*Vnode, e
 	errChan := make(chan error, 1)
 
 	go func() {
-		le, err := out.client.FindSuccessorsServe(context.Background(),
-			&FindSuccReq{VN: vn, Count: int32(n), Key: k})
+		req := &FindSuccReq{VN: vn, Count: int32(n), Key: k}
+		le, err := out.client.FindSuccessorsServe(context.Background(), req)
 		// Return the connection
 		cs.returnConn(out)
+
 		if err == nil {
-			if le.Err == "" {
-				respChan <- le.Vnodes
-				return
-			}
-			err = fmt.Errorf(le.Err)
+			respChan <- le.Vnodes
+		} else {
+			errChan <- err
 		}
-		errChan <- err
+
 	}()
 
 	select {
@@ -279,17 +274,14 @@ func (cs *GRPCTransport) ClearPredecessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
-		er, err := out.client.ClearPredecessorServe(context.Background(), &VnodePair{Target: target, Self: self})
+		_, err := out.client.ClearPredecessorServe(context.Background(), &VnodePair{Target: target, Self: self})
 		// Return the connection
 		cs.returnConn(out)
 		if err == nil {
-			if er.Err == "" {
-				respChan <- true
-				return
-			}
-			err = fmt.Errorf(er.Err)
+			respChan <- true
+		} else {
+			errChan <- err
 		}
-		errChan <- err
 
 	}()
 
@@ -316,17 +308,16 @@ func (cs *GRPCTransport) SkipSuccessor(target, self *Vnode) error {
 	errChan := make(chan error, 1)
 
 	go func() {
-
-		er, err := out.client.SkipSuccessorServe(context.Background(), &VnodePair{Target: target, Self: self})
+		_, err := out.client.SkipSuccessorServe(context.Background(), &VnodePair{Target: target, Self: self})
 		// Return the connection
 		cs.returnConn(out)
+
 		if err == nil {
-			if er.Err == "" {
-				respChan <- true
-			}
-			err = fmt.Errorf(er.Err)
+			respChan <- true
+		} else {
+			errChan <- err
 		}
-		errChan <- err
+
 	}()
 
 	select {
@@ -401,102 +392,138 @@ func (cs *GRPCTransport) get(vn *Vnode) (VnodeRPC, bool) {
 }
 
 // ListVnodesServe is the server side call
-func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *StringParam) (*VnodeListErr, error) {
+func (cs *GRPCTransport) ListVnodesServe(ctx context.Context, in *StringParam) (*VnodeList, error) {
 	// Generate all the local clients
-	resp := &VnodeListErr{Vnodes: make([]*Vnode, 0, len(cs.local))}
+	vnodes := make([]*Vnode, 0, len(cs.local))
 	// Build list
 	cs.lock.RLock()
 	for _, v := range cs.local {
-		resp.Vnodes = append(resp.Vnodes, v.vnode)
+		vnodes = append(vnodes, v.vnode)
 	}
 	cs.lock.RUnlock()
-	return resp, nil
-}
-func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*BoolErr, error) {
-	_, ok := cs.get(in)
-	if ok {
-		return &BoolErr{Ok: ok}, nil
-	}
-	return &BoolErr{Err: fmt.Sprintf("target vnode not found: %s/%x", in.Host, in.Id)}, nil
+
+	return &VnodeList{Vnodes: vnodes}, nil
 }
 
-// NotifyServe the client
-func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*VnodeListErr, error) {
-	obj, ok := cs.get(in.Target)
-	resp := &VnodeListErr{}
+// PingServe serves a ping request
+func (cs *GRPCTransport) PingServe(ctx context.Context, in *Vnode) (*Bool, error) {
+	_, ok := cs.get(in)
 	if ok {
-		nodes, err := obj.Notify(in.Self)
-		if err == nil {
+		return &Bool{Ok: ok}, nil
+	}
+	return &Bool{}, fmt.Errorf("target vnode not found: %s/%x", in.Host, in.Id)
+}
+
+// NotifyServe serves a notify request
+func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*VnodeList, error) {
+	var (
+		obj, ok = cs.get(in.Target)
+		resp    = &VnodeList{}
+		err     error
+	)
+
+	if ok {
+		var nodes []*Vnode
+		if nodes, err = obj.Notify(in.Self); err == nil {
 			resp.Vnodes = trimSlice(nodes)
-		} else {
-			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
+		err = fmt.Errorf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
-	return resp, nil
+
+	return resp, err
 }
-func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*VnodeError, error) {
+
+// GetPredecessorServe serves a GetPredecessor request
+func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*Vnode, error) {
 	obj, ok := cs.get(in)
-	resp := &VnodeError{}
+
+	var (
+		vn  *Vnode
+		err error
+	)
 	if ok {
-		vn, err := obj.GetPredecessor()
+		vn, err = obj.GetPredecessor()
 		if err == nil {
-			resp.VN = vn
-		} else {
-			resp.Err = err.Error()
+
+			//
+			// TODO: Revisit WHY is it returning nil? (I.E. PREDECESSOR IS NIL)
+			//
+
+			if vn == nil {
+				vn = &Vnode{}
+			}
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Host, in.Id)
+		err = fmt.Errorf("target vnode not found: %s/%x", in.Host, in.Id)
 	}
-	return resp, nil
+
+	return vn, err
 }
-func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *FindSuccReq) (*VnodeListErr, error) {
-	obj, ok := cs.get(in.VN)
-	resp := &VnodeListErr{}
+
+// FindSuccessorsServe serves a FindSuccessors request
+func (cs *GRPCTransport) FindSuccessorsServe(ctx context.Context, in *FindSuccReq) (*VnodeList, error) {
+	var (
+		obj, ok = cs.get(in.VN)
+		resp    = &VnodeList{}
+		err     error
+	)
+
 	if ok {
-		nodes, err := obj.FindSuccessors(int(in.Count), in.Key)
-		if err == nil {
+		var nodes []*Vnode
+		if nodes, err = obj.FindSuccessors(int(in.Count), in.Key); err == nil {
 			resp.Vnodes = trimSlice(nodes)
-		} else {
-			resp.Err = err.Error()
 		}
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.VN.Host, in.VN.Id)
+		err = fmt.Errorf("target vnode not found: %s/%x", in.VN.Host, in.VN.Id)
 	}
-	return resp, nil
+
+	return resp, err
 }
-func (cs *GRPCTransport) ClearPredecessorServe(ctx context.Context, in *VnodePair) (*ErrResponse, error) {
-	obj, ok := cs.get(in.Target)
-	resp := &ErrResponse{}
+
+// ClearPredecessorServe serves a ClearPredecessor request
+func (cs *GRPCTransport) ClearPredecessorServe(ctx context.Context, in *VnodePair) (*Response, error) {
+	var (
+		obj, ok = cs.get(in.Target)
+		resp    = &Response{}
+		err     error
+	)
+
 	if ok {
-		if err := obj.ClearPredecessor(in.Self); err != nil {
-			resp.Err = err.Error()
-		}
+		err = obj.ClearPredecessor(in.Self)
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
+		err = fmt.Errorf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
-	return resp, nil
+
+	return resp, err
 }
-func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) (*ErrResponse, error) {
-	obj, ok := cs.get(in.Target)
-	resp := &ErrResponse{}
+
+// SkipSuccessorServe serves a SkipSuccessor request
+func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) (*Response, error) {
+	var (
+		obj, ok = cs.get(in.Target)
+		resp    = &Response{}
+		err     error
+	)
+
 	if ok {
-		if err := obj.SkipSuccessor(in.Self); err != nil {
-			resp.Err = err.Error()
-		}
+		err = obj.SkipSuccessor(in.Self)
 	} else {
-		resp.Err = fmt.Sprintf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
+		err = fmt.Errorf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
 	}
-	return resp, nil
+
+	return resp, err
 }
 
 // Shutdown the TCP transport
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
 
-	// TODO: remove this logic.  This should be handled by the entity that
-	// instantiated the grpc instance.
+	//
+	// TODO: remove this logic.  This should be handled by the entity that instantiated the grpc
+	// instance.
+	//
+
 	// Drain and stop grpc server
 	cs.server.GracefulStop()
 	// Close all the outbound

@@ -3,33 +3,23 @@ syntax = "proto3";
 package chord;
 
 service chord {
-    rpc ListVnodesServe(StringParam) returns (VnodeListErr) {}
-    rpc PingServe(Vnode) returns (BoolErr) {}
-    rpc NotifyServe(VnodePair) returns (VnodeListErr) {}
-    rpc GetPredecessorServe(Vnode) returns (VnodeError) {}
-    rpc FindSuccessorsServe(FindSuccReq) returns (VnodeListErr) {}
-    rpc ClearPredecessorServe(VnodePair) returns (ErrResponse) {}
-    rpc SkipSuccessorServe(VnodePair) returns (ErrResponse) {}
+    rpc ListVnodesServe(StringParam) returns (VnodeList) {}
+    rpc PingServe(Vnode) returns (Bool) {}
+    rpc NotifyServe(VnodePair) returns (VnodeList) {}
+    rpc GetPredecessorServe(Vnode) returns (Vnode) {}
+    rpc FindSuccessorsServe(FindSuccReq) returns (VnodeList) {}
+    rpc ClearPredecessorServe(VnodePair) returns (Response) {}
+    rpc SkipSuccessorServe(VnodePair) returns (Response) {}
 }
 
 message Vnode {
     bytes id = 1;
     string host = 2;
+    bytes meta = 3;
 }
 
-message VnodeError {
-    Vnode VN = 1;
-    string err = 2;
-}
-
-message VnodeListErr {
-    string err = 1;
-    repeated Vnode vnodes = 2;
-}
-
-message BoolErr {
-    bool ok = 1;
-    string err = 2;
+message VnodeList {
+    repeated Vnode vnodes = 1;
 }
 
 message FindSuccReq {
@@ -37,6 +27,11 @@ message FindSuccReq {
     int32 count = 2;
     bytes key = 3;
 }
+
+message Bool {
+    bool ok = 1;
+}
+
 message StringParam {
     string value = 1;
 }
@@ -46,6 +41,6 @@ message VnodePair {
     Vnode self = 2;
 }
 
-message ErrResponse {
-    string err = 1;
+// Generic response
+message Response {
 }

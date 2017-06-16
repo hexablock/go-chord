@@ -21,7 +21,7 @@ type LocalTransport struct {
 	local  map[string]*localRPC
 }
 
-// Creates a local transport to wrap a remote transport
+// InitLocalTransport creates a local transport to wrap a remote transport
 func InitLocalTransport(remote Transport) Transport {
 	// Replace a nil transport with black hole
 	if remote == nil {
@@ -164,8 +164,7 @@ func (lt *LocalTransport) Deregister(v *Vnode) {
 
 // BlackholeTransport is used to provide an implemenation of the Transport that
 // does not actually do anything. Any operation will result in an error.
-type BlackholeTransport struct {
-}
+type BlackholeTransport struct{}
 
 func (*BlackholeTransport) ListVnodes(host string) ([]*Vnode, error) {
 	return nil, fmt.Errorf("Failed to connect! Blackhole: %s.", host)

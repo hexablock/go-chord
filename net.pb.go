@@ -10,13 +10,12 @@ It is generated from these files:
 
 It has these top-level messages:
 	Vnode
-	VnodeError
-	VnodeListErr
-	BoolErr
+	VnodeList
 	FindSuccReq
+	Bool
 	StringParam
 	VnodePair
-	ErrResponse
+	Response
 */
 package chord
 
@@ -43,6 +42,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Vnode struct {
 	Id   []byte `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Host string `protobuf:"bytes,2,opt,name=host" json:"host,omitempty"`
+	Meta []byte `protobuf:"bytes,3,opt,name=meta,proto3" json:"meta,omitempty"`
 }
 
 func (m *Vnode) Reset()                    { *m = Vnode{} }
@@ -64,76 +64,27 @@ func (m *Vnode) GetHost() string {
 	return ""
 }
 
-type VnodeError struct {
-	VN  *Vnode `protobuf:"bytes,1,opt,name=VN,json=vN" json:"VN,omitempty"`
-	Err string `protobuf:"bytes,2,opt,name=err" json:"err,omitempty"`
-}
-
-func (m *VnodeError) Reset()                    { *m = VnodeError{} }
-func (m *VnodeError) String() string            { return proto.CompactTextString(m) }
-func (*VnodeError) ProtoMessage()               {}
-func (*VnodeError) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *VnodeError) GetVN() *Vnode {
+func (m *Vnode) GetMeta() []byte {
 	if m != nil {
-		return m.VN
+		return m.Meta
 	}
 	return nil
 }
 
-func (m *VnodeError) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
+type VnodeList struct {
+	Vnodes []*Vnode `protobuf:"bytes,1,rep,name=vnodes" json:"vnodes,omitempty"`
 }
 
-type VnodeListErr struct {
-	Err    string   `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
-	Vnodes []*Vnode `protobuf:"bytes,2,rep,name=vnodes" json:"vnodes,omitempty"`
-}
+func (m *VnodeList) Reset()                    { *m = VnodeList{} }
+func (m *VnodeList) String() string            { return proto.CompactTextString(m) }
+func (*VnodeList) ProtoMessage()               {}
+func (*VnodeList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *VnodeListErr) Reset()                    { *m = VnodeListErr{} }
-func (m *VnodeListErr) String() string            { return proto.CompactTextString(m) }
-func (*VnodeListErr) ProtoMessage()               {}
-func (*VnodeListErr) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *VnodeListErr) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
-}
-
-func (m *VnodeListErr) GetVnodes() []*Vnode {
+func (m *VnodeList) GetVnodes() []*Vnode {
 	if m != nil {
 		return m.Vnodes
 	}
 	return nil
-}
-
-type BoolErr struct {
-	Ok  bool   `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
-	Err string `protobuf:"bytes,2,opt,name=err" json:"err,omitempty"`
-}
-
-func (m *BoolErr) Reset()                    { *m = BoolErr{} }
-func (m *BoolErr) String() string            { return proto.CompactTextString(m) }
-func (*BoolErr) ProtoMessage()               {}
-func (*BoolErr) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *BoolErr) GetOk() bool {
-	if m != nil {
-		return m.Ok
-	}
-	return false
-}
-
-func (m *BoolErr) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
 }
 
 type FindSuccReq struct {
@@ -145,7 +96,7 @@ type FindSuccReq struct {
 func (m *FindSuccReq) Reset()                    { *m = FindSuccReq{} }
 func (m *FindSuccReq) String() string            { return proto.CompactTextString(m) }
 func (*FindSuccReq) ProtoMessage()               {}
-func (*FindSuccReq) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*FindSuccReq) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *FindSuccReq) GetVN() *Vnode {
 	if m != nil {
@@ -168,6 +119,22 @@ func (m *FindSuccReq) GetKey() []byte {
 	return nil
 }
 
+type Bool struct {
+	Ok bool `protobuf:"varint,1,opt,name=ok" json:"ok,omitempty"`
+}
+
+func (m *Bool) Reset()                    { *m = Bool{} }
+func (m *Bool) String() string            { return proto.CompactTextString(m) }
+func (*Bool) ProtoMessage()               {}
+func (*Bool) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *Bool) GetOk() bool {
+	if m != nil {
+		return m.Ok
+	}
+	return false
+}
+
 type StringParam struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
 }
@@ -175,7 +142,7 @@ type StringParam struct {
 func (m *StringParam) Reset()                    { *m = StringParam{} }
 func (m *StringParam) String() string            { return proto.CompactTextString(m) }
 func (*StringParam) ProtoMessage()               {}
-func (*StringParam) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*StringParam) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *StringParam) GetValue() string {
 	if m != nil {
@@ -192,7 +159,7 @@ type VnodePair struct {
 func (m *VnodePair) Reset()                    { *m = VnodePair{} }
 func (m *VnodePair) String() string            { return proto.CompactTextString(m) }
 func (*VnodePair) ProtoMessage()               {}
-func (*VnodePair) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (*VnodePair) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *VnodePair) GetTarget() *Vnode {
 	if m != nil {
@@ -208,31 +175,23 @@ func (m *VnodePair) GetSelf() *Vnode {
 	return nil
 }
 
-type ErrResponse struct {
-	Err string `protobuf:"bytes,1,opt,name=err" json:"err,omitempty"`
+// Generic response
+type Response struct {
 }
 
-func (m *ErrResponse) Reset()                    { *m = ErrResponse{} }
-func (m *ErrResponse) String() string            { return proto.CompactTextString(m) }
-func (*ErrResponse) ProtoMessage()               {}
-func (*ErrResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *ErrResponse) GetErr() string {
-	if m != nil {
-		return m.Err
-	}
-	return ""
-}
+func (m *Response) Reset()                    { *m = Response{} }
+func (m *Response) String() string            { return proto.CompactTextString(m) }
+func (*Response) ProtoMessage()               {}
+func (*Response) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func init() {
 	proto.RegisterType((*Vnode)(nil), "chord.Vnode")
-	proto.RegisterType((*VnodeError)(nil), "chord.VnodeError")
-	proto.RegisterType((*VnodeListErr)(nil), "chord.VnodeListErr")
-	proto.RegisterType((*BoolErr)(nil), "chord.BoolErr")
+	proto.RegisterType((*VnodeList)(nil), "chord.VnodeList")
 	proto.RegisterType((*FindSuccReq)(nil), "chord.FindSuccReq")
+	proto.RegisterType((*Bool)(nil), "chord.Bool")
 	proto.RegisterType((*StringParam)(nil), "chord.StringParam")
 	proto.RegisterType((*VnodePair)(nil), "chord.VnodePair")
-	proto.RegisterType((*ErrResponse)(nil), "chord.ErrResponse")
+	proto.RegisterType((*Response)(nil), "chord.Response")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -246,13 +205,13 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Chord service
 
 type ChordClient interface {
-	ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeListErr, error)
-	PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*BoolErr, error)
-	NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeListErr, error)
-	GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*VnodeError, error)
-	FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeListErr, error)
-	ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error)
-	SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error)
+	ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeList, error)
+	PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*Bool, error)
+	NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeList, error)
+	GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*Vnode, error)
+	FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeList, error)
+	ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*Response, error)
+	SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*Response, error)
 }
 
 type chordClient struct {
@@ -263,8 +222,8 @@ func NewChordClient(cc *grpc.ClientConn) ChordClient {
 	return &chordClient{cc}
 }
 
-func (c *chordClient) ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) ListVnodesServe(ctx context.Context, in *StringParam, opts ...grpc.CallOption) (*VnodeList, error) {
+	out := new(VnodeList)
 	err := grpc.Invoke(ctx, "/chord.chord/ListVnodesServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -272,8 +231,8 @@ func (c *chordClient) ListVnodesServe(ctx context.Context, in *StringParam, opts
 	return out, nil
 }
 
-func (c *chordClient) PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*BoolErr, error) {
-	out := new(BoolErr)
+func (c *chordClient) PingServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*Bool, error) {
+	out := new(Bool)
 	err := grpc.Invoke(ctx, "/chord.chord/PingServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -281,8 +240,8 @@ func (c *chordClient) PingServe(ctx context.Context, in *Vnode, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *chordClient) NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) NotifyServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*VnodeList, error) {
+	out := new(VnodeList)
 	err := grpc.Invoke(ctx, "/chord.chord/NotifyServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -290,8 +249,8 @@ func (c *chordClient) NotifyServe(ctx context.Context, in *VnodePair, opts ...gr
 	return out, nil
 }
 
-func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*VnodeError, error) {
-	out := new(VnodeError)
+func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Vnode, opts ...grpc.CallOption) (*Vnode, error) {
+	out := new(Vnode)
 	err := grpc.Invoke(ctx, "/chord.chord/GetPredecessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -299,8 +258,8 @@ func (c *chordClient) GetPredecessorServe(ctx context.Context, in *Vnode, opts .
 	return out, nil
 }
 
-func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeListErr, error) {
-	out := new(VnodeListErr)
+func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *FindSuccReq, opts ...grpc.CallOption) (*VnodeList, error) {
+	out := new(VnodeList)
 	err := grpc.Invoke(ctx, "/chord.chord/FindSuccessorsServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -308,8 +267,8 @@ func (c *chordClient) FindSuccessorsServe(ctx context.Context, in *FindSuccReq, 
 	return out, nil
 }
 
-func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error) {
-	out := new(ErrResponse)
+func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
 	err := grpc.Invoke(ctx, "/chord.chord/ClearPredecessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -317,8 +276,8 @@ func (c *chordClient) ClearPredecessorServe(ctx context.Context, in *VnodePair, 
 	return out, nil
 }
 
-func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*ErrResponse, error) {
-	out := new(ErrResponse)
+func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *VnodePair, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
 	err := grpc.Invoke(ctx, "/chord.chord/SkipSuccessorServe", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -329,13 +288,13 @@ func (c *chordClient) SkipSuccessorServe(ctx context.Context, in *VnodePair, opt
 // Server API for Chord service
 
 type ChordServer interface {
-	ListVnodesServe(context.Context, *StringParam) (*VnodeListErr, error)
-	PingServe(context.Context, *Vnode) (*BoolErr, error)
-	NotifyServe(context.Context, *VnodePair) (*VnodeListErr, error)
-	GetPredecessorServe(context.Context, *Vnode) (*VnodeError, error)
-	FindSuccessorsServe(context.Context, *FindSuccReq) (*VnodeListErr, error)
-	ClearPredecessorServe(context.Context, *VnodePair) (*ErrResponse, error)
-	SkipSuccessorServe(context.Context, *VnodePair) (*ErrResponse, error)
+	ListVnodesServe(context.Context, *StringParam) (*VnodeList, error)
+	PingServe(context.Context, *Vnode) (*Bool, error)
+	NotifyServe(context.Context, *VnodePair) (*VnodeList, error)
+	GetPredecessorServe(context.Context, *Vnode) (*Vnode, error)
+	FindSuccessorsServe(context.Context, *FindSuccReq) (*VnodeList, error)
+	ClearPredecessorServe(context.Context, *VnodePair) (*Response, error)
+	SkipSuccessorServe(context.Context, *VnodePair) (*Response, error)
 }
 
 func RegisterChordServer(s *grpc.Server, srv ChordServer) {
@@ -508,32 +467,30 @@ var _Chord_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("net.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 426 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x53, 0x5f, 0x6b, 0x13, 0x41,
-	0x10, 0x4f, 0x2e, 0x4d, 0x35, 0x73, 0x21, 0xd6, 0x89, 0x42, 0x28, 0x82, 0x61, 0xf5, 0xa1, 0x10,
-	0xc8, 0x43, 0x05, 0xf1, 0x21, 0xa0, 0x28, 0xa9, 0x2f, 0x12, 0xc2, 0x1d, 0xf4, 0xfd, 0xbc, 0x9b,
-	0xa6, 0x4b, 0xe2, 0x6d, 0x9c, 0xdd, 0x04, 0xfa, 0x81, 0xfc, 0x9e, 0xb2, 0x73, 0x9b, 0x72, 0xf6,
-	0x52, 0xa4, 0x6f, 0x3b, 0xcc, 0xef, 0xcf, 0xcc, 0xfc, 0xee, 0xa0, 0x57, 0x92, 0x9b, 0x6e, 0xd9,
-	0x38, 0x83, 0xdd, 0xfc, 0xd6, 0x70, 0xa1, 0x26, 0xd0, 0xbd, 0x2e, 0x4d, 0x41, 0x38, 0x80, 0x48,
-	0x17, 0xa3, 0xf6, 0xb8, 0x7d, 0xd1, 0x4f, 0x22, 0x5d, 0x20, 0xc2, 0xc9, 0xad, 0xb1, 0x6e, 0x14,
-	0x8d, 0xdb, 0x17, 0xbd, 0x44, 0xde, 0x6a, 0x06, 0x20, 0xe0, 0x39, 0xb3, 0x61, 0x7c, 0x03, 0xd1,
-	0xf5, 0x42, 0x18, 0xf1, 0x65, 0x7f, 0x2a, 0x72, 0x53, 0x69, 0x27, 0xd1, 0x7e, 0x81, 0x67, 0xd0,
-	0x21, 0xe6, 0x40, 0xf7, 0x4f, 0x75, 0x05, 0x7d, 0x69, 0xff, 0xd0, 0xd6, 0xcd, 0x99, 0x0f, 0x88,
-	0xf6, 0x3d, 0x02, 0xdf, 0xc3, 0xe9, 0xde, 0x23, 0xec, 0x28, 0x1a, 0x77, 0x1a, 0xaa, 0xa1, 0xa7,
-	0x26, 0xf0, 0xec, 0xab, 0x31, 0x1b, 0x2f, 0x31, 0x80, 0xc8, 0xac, 0x45, 0xe1, 0x79, 0x12, 0x99,
-	0xf5, 0x11, 0xd3, 0x14, 0xe2, 0x2b, 0x5d, 0x16, 0xe9, 0x2e, 0xcf, 0x13, 0xfa, 0xfd, 0x9f, 0x99,
-	0x5f, 0x41, 0x37, 0x37, 0xbb, 0xb2, 0x5a, 0xba, 0x9b, 0x54, 0x85, 0x17, 0x5d, 0xd3, 0xdd, 0xa8,
-	0x23, 0xa7, 0xf1, 0x4f, 0xf5, 0x0e, 0xe2, 0xd4, 0xb1, 0x2e, 0x57, 0xcb, 0x8c, 0xb3, 0x5f, 0x9e,
-	0xb6, 0xcf, 0x36, 0x3b, 0x0a, 0xab, 0x54, 0x85, 0x4a, 0xa1, 0x27, 0xca, 0xcb, 0x4c, 0xcb, 0x66,
-	0x2e, 0xe3, 0x15, 0xb9, 0xa3, 0xde, 0xa1, 0x87, 0x63, 0x38, 0xb1, 0xb4, 0xb9, 0x11, 0xfb, 0x87,
-	0x18, 0xe9, 0xa8, 0xb7, 0x10, 0xcf, 0x99, 0x13, 0xb2, 0x5b, 0x53, 0x5a, 0x6a, 0x9e, 0xf0, 0xf2,
-	0x4f, 0x07, 0xaa, 0x64, 0x71, 0x06, 0x2f, 0xfc, 0xa5, 0x85, 0x6d, 0x53, 0xe2, 0x3d, 0x21, 0x06,
-	0xc5, 0xda, 0xf0, 0xe7, 0xc3, 0xba, 0x4b, 0x88, 0x46, 0xb5, 0x70, 0x02, 0xbd, 0xa5, 0x2e, 0x57,
-	0x15, 0xef, 0x9f, 0x49, 0xce, 0x07, 0xa1, 0x0a, 0x21, 0xa8, 0x16, 0x7e, 0x84, 0x78, 0x61, 0x9c,
-	0xbe, 0xb9, 0xab, 0xe0, 0x67, 0x75, 0xb8, 0x5f, 0xff, 0x31, 0x93, 0x4f, 0x30, 0xfc, 0x4e, 0x6e,
-	0xc9, 0x54, 0x50, 0x4e, 0xd6, 0x1a, 0x3e, 0x66, 0xf7, 0xb2, 0x5e, 0xc9, 0x97, 0xa7, 0x5a, 0xf8,
-	0x05, 0x86, 0x87, 0x58, 0x85, 0xf8, 0x60, 0xc1, 0x5a, 0xe4, 0x8f, 0x79, 0x7f, 0x86, 0xd7, 0xdf,
-	0x36, 0x94, 0x71, 0xc3, 0xbd, 0x39, 0xfd, 0x41, 0xb5, 0x76, 0x79, 0xd5, 0xc2, 0x19, 0x60, 0xba,
-	0xd6, 0xdb, 0xfb, 0x11, 0x9e, 0xc4, 0xfe, 0x79, 0x2a, 0x7f, 0xe1, 0x87, 0xbf, 0x01, 0x00, 0x00,
-	0xff, 0xff, 0x92, 0x4f, 0xe4, 0x2c, 0x92, 0x03, 0x00, 0x00,
+	// 395 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x4b, 0x6b, 0xdc, 0x30,
+	0x10, 0xf6, 0x63, 0x1d, 0xe2, 0x71, 0x68, 0xc2, 0xa4, 0x2d, 0x26, 0xf4, 0x60, 0xd4, 0x1e, 0x7c,
+	0x5a, 0x68, 0xf6, 0x14, 0x68, 0x29, 0xb4, 0xd0, 0x5e, 0xca, 0x62, 0x64, 0xc8, 0xdd, 0xb5, 0x27,
+	0x1b, 0x61, 0xc7, 0xda, 0x4a, 0x5a, 0x43, 0xfe, 0x44, 0x7f, 0x73, 0x91, 0xec, 0x94, 0x7d, 0xf8,
+	0xd0, 0xdb, 0x8c, 0xe7, 0x7b, 0xcd, 0x08, 0x43, 0xdc, 0x93, 0x59, 0x6e, 0x95, 0x34, 0x12, 0xa3,
+	0xfa, 0x51, 0xaa, 0x86, 0x7d, 0x81, 0xe8, 0xbe, 0x97, 0x0d, 0xe1, 0x2b, 0x08, 0x44, 0x93, 0xfa,
+	0x99, 0x9f, 0x5f, 0xf0, 0x40, 0x34, 0x88, 0xb0, 0x78, 0x94, 0xda, 0xa4, 0x41, 0xe6, 0xe7, 0x31,
+	0x77, 0xb5, 0xfd, 0xf6, 0x44, 0xa6, 0x4a, 0x43, 0x87, 0x72, 0x35, 0xfb, 0x08, 0xb1, 0x13, 0xf8,
+	0x29, 0xb4, 0xc1, 0x0f, 0x70, 0x36, 0xd8, 0x46, 0xa7, 0x7e, 0x16, 0xe6, 0xc9, 0xed, 0xc5, 0xd2,
+	0xb9, 0x2c, 0x1d, 0x82, 0x4f, 0x33, 0x56, 0x42, 0xf2, 0x5d, 0xf4, 0x4d, 0xb9, 0xab, 0x6b, 0x4e,
+	0xbf, 0xf1, 0x1d, 0x04, 0xf7, 0x6b, 0xe7, 0x7c, 0x4c, 0x08, 0x86, 0x35, 0xbe, 0x86, 0xa8, 0x96,
+	0xbb, 0x7e, 0x0c, 0x12, 0xf1, 0xb1, 0xc1, 0x2b, 0x08, 0x5b, 0x7a, 0x9e, 0x82, 0xd8, 0x92, 0xbd,
+	0x85, 0xc5, 0x57, 0x29, 0x3b, 0xbb, 0x87, 0x6c, 0x9d, 0xda, 0x39, 0x0f, 0x64, 0xcb, 0xde, 0x43,
+	0x52, 0x1a, 0x25, 0xfa, 0x4d, 0x51, 0xa9, 0xea, 0xc9, 0xca, 0x0d, 0x55, 0xb7, 0x23, 0x87, 0x88,
+	0xf9, 0xd8, 0xb0, 0x72, 0x5a, 0xa2, 0xa8, 0x84, 0xb2, 0x4b, 0x98, 0x4a, 0x6d, 0xc8, 0xcc, 0x66,
+	0x9a, 0x66, 0x98, 0xc1, 0x42, 0x53, 0xf7, 0xe0, 0x62, 0x1d, 0x63, 0xdc, 0x84, 0x01, 0x9c, 0x73,
+	0xd2, 0x5b, 0xd9, 0x6b, 0xba, 0xfd, 0x13, 0xc2, 0x78, 0x70, 0xbc, 0x83, 0x4b, 0x7b, 0x2a, 0x07,
+	0xd4, 0x25, 0xa9, 0x81, 0x10, 0x27, 0xf2, 0x5e, 0xce, 0x9b, 0xab, 0x7d, 0x41, 0x4b, 0x60, 0x1e,
+	0xe6, 0x10, 0x17, 0xa2, 0xdf, 0x8c, 0xa4, 0x03, 0xc7, 0x9b, 0x64, 0xea, 0xec, 0x09, 0x98, 0x87,
+	0x2b, 0x48, 0xd6, 0xd2, 0x88, 0x87, 0xe7, 0x11, 0x7b, 0x20, 0x66, 0x77, 0x9c, 0x95, 0x5f, 0xc1,
+	0xf5, 0x0f, 0x32, 0x85, 0xa2, 0x86, 0x6a, 0xd2, 0x5a, 0xaa, 0x39, 0xa3, 0x83, 0x8e, 0x79, 0xf8,
+	0x19, 0xae, 0x5f, 0xde, 0xd2, 0x71, 0x8e, 0x56, 0xda, 0x7b, 0xe7, 0x59, 0xcf, 0x4f, 0xf0, 0xe6,
+	0x5b, 0x47, 0x95, 0x3a, 0x71, 0x3d, 0x8d, 0x7c, 0x39, 0x7d, 0x79, 0xb9, 0x29, 0xf3, 0xf0, 0x0e,
+	0xb0, 0x6c, 0xc5, 0xf6, 0x9f, 0xf9, 0xff, 0x53, 0x7f, 0x9d, 0xb9, 0xbf, 0x60, 0xf5, 0x37, 0x00,
+	0x00, 0xff, 0xff, 0xd4, 0x90, 0x65, 0x8b, 0x12, 0x03, 0x00, 0x00,
 }

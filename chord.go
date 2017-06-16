@@ -1,10 +1,10 @@
-/*
-This package is used to provide an implementation of the
-Chord network protocol.
-*/
+//
+// Chord package is used to provide an implementation of the Chord network protocol.
+//
 package chord
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"fmt"
 	"hash"
@@ -56,9 +56,37 @@ type Delegate interface {
 	Shutdown()
 }
 
+// Meta holds metadata for a node
+type Meta map[string][]byte
+
+func (meta Meta) MarshalBinary() ([]byte, error) {
+	lines := make([][]byte, len(meta))
+
+	i := 0
+	for k, v := range meta {
+		lines[i] = append(append([]byte(k), []byte("=")...), v...)
+		i++
+	}
+
+	return bytes.Join(lines, []byte(" ")), nil
+}
+
+func (meta Meta) UnmarshalBinary(b []byte) error {
+	lines := bytes.Split(b, []byte(" "))
+	for _, line := range lines {
+		arr := bytes.Split(line, []byte("="))
+		if len(arr) != 2 {
+			return fmt.Errorf("invalid data: %s", line)
+		}
+		meta[string(arr[0])] = arr[1]
+	}
+	return nil
+}
+
 // Config for Chord nodes
 type Config struct {
 	Hostname      string           // Local host name
+	Meta          Meta             // User defined metadata
 	NumVnodes     int              // Number of vnodes per physical node
 	HashFunc      func() hash.Hash `json:"-"` // Hash function to use
 	StabilizeMin  time.Duration    // Minimum stabilization time
@@ -92,14 +120,15 @@ type Ring struct {
 // DefaultConfig returns the default Ring configuration
 func DefaultConfig(hostname string) *Config {
 	return &Config{
-		hostname,
-		8,        // 8 vnodes
-		sha1.New, // SHA1
-		time.Duration(15 * time.Second),
-		time.Duration(45 * time.Second),
-		8,   // 8 successors
-		nil, // No delegate
-		160, // 160bit hash function
+		Hostname:      hostname,
+		Meta:          make(Meta),
+		NumVnodes:     8,
+		HashFunc:      sha1.New, // sha1
+		StabilizeMin:  time.Duration(15 * time.Second),
+		StabilizeMax:  time.Duration(45 * time.Second),
+		NumSuccessors: 8,
+		Delegate:      nil,
+		hashBits:      160, // 160bit hash function for sha1
 	}
 }
 
