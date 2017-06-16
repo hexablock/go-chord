@@ -111,7 +111,7 @@ type localVnode struct {
 	finger      []*Vnode
 	lastFinger  int
 	predecessor *Vnode
-	stabilized  time.Time
+	stabilized  time.Time // Last stabilized time
 	timer       *time.Timer
 }
 
@@ -139,23 +139,6 @@ func DefaultConfig(hostname string) *Config {
 		DelegateQueueSize: 32,
 		hashBits:          160, // 160bit hash function for sha1
 	}
-}
-
-// This is a helper function used by Create and Join.  It sets the hash bits in the config, inits
-// the coordinate client, and finally initializes the ring
-func initializeRing(conf *Config, trans Transport) (*Ring, error) {
-	// Initialize the hash bits
-	conf.hashBits = conf.HashFunc().Size() * 8
-	// Initialize vivaldi coordinate client
-	coord, err := coordinate.NewClient(coordinate.DefaultConfig())
-	if err != nil {
-		return nil, err
-	}
-	// Initialize a ring
-	ring := &Ring{coordClient: coord}
-	ring.init(conf, trans)
-
-	return ring, nil
 }
 
 // Create a new Chord ring given the config and transport
