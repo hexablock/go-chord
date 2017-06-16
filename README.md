@@ -8,7 +8,13 @@ The protocol is separated from the implementation of an underlying network
 transport or RPC mechanism. Instead Chord relies on a transport implementation.
 A GRPCTransport implementation as been provided.
 
-# Acknowledgements
+## Additions
+The following features have been added on top of the standard Chord protocol.
+
+- Vivaldi coordinate tracking to measure inter-vnode latency
+- Additional binary metadata field for each vnode to pass custom information
+
+### Acknowledgements
 Code has been used from the following libraries:
 
 - https://github.com/armon/go-chord

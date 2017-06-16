@@ -90,7 +90,7 @@ type Ring struct {
 	config      *Config
 	transport   Transport
 	vnodes      []*localVnode
-	delegateCh  chan func()
+	delegateCh  chan func()        // channel for delegate callbacks
 	coordClient *coordinate.Client // vivaldi coordinate client
 	shutdown    chan bool
 }

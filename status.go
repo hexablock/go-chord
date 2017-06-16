@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hexablock/go-chord/coordinate"
@@ -16,19 +17,21 @@ type VnodeStatus struct {
 
 // Status represents the status of a node
 type Status struct {
-	Coordinate *coordinate.Coordinate
-	Vnodes     []*VnodeStatus
-	HashBits   int
-	Meta       Meta
+	Coordinate    *coordinate.Coordinate
+	Vnodes        []*VnodeStatus
+	HashBits      int
+	DelegateQueue string // The current to size ratio ie. curr/size
+	Meta          Meta
 }
 
 // Status returns ring information of this node
 func (r *Ring) Status() *Status {
 	status := &Status{
-		HashBits:   r.config.hashBits,
-		Coordinate: r.coordClient.GetCoordinate(),
-		Vnodes:     make([]*VnodeStatus, len(r.vnodes)),
-		Meta:       r.config.Meta,
+		HashBits:      r.config.hashBits,
+		Coordinate:    r.coordClient.GetCoordinate(),
+		Vnodes:        make([]*VnodeStatus, len(r.vnodes)),
+		Meta:          r.config.Meta,
+		DelegateQueue: fmt.Sprintf("%d/%d", len(r.delegateCh), r.config.DelegateQueueSize),
 	}
 
 	for i, vn := range r.vnodes {

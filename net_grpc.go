@@ -125,7 +125,7 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	}
 }
 
-// Ping a Vnode, check for liveness.  self is the caller Vnode so rtt's can be determined from each
+// Ping a Vnode to check for liveness.  self is the caller Vnode to determine rtt's from each
 // vnode's perspective.
 func (cs *GRPCTransport) Ping(self, target *Vnode) (bool, error) {
 	out, err := cs.getConn(target.Host)
@@ -161,8 +161,9 @@ func (cs *GRPCTransport) Ping(self, target *Vnode) (bool, error) {
 	case resp := <-respChan:
 		// Get RTT
 		rtt := time.Since(start)
-		// Update coordinates
+		// Get local vnode to be used to update the coordinate
 		obj, _ := cs.get(self)
+		// Update coordinate using the local vnode
 		if _, err := obj.UpdateCoordinate(target, resp.Coordinate, rtt); err != nil {
 			log.Printf("[ERROR] Failed to update coordinates for %s: %v", target.Host, err)
 		}

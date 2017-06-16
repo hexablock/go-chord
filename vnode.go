@@ -153,12 +153,16 @@ CHECK_NEW_SUC:
 	return nil
 }
 
+// UpdateCoordinate updates the local coordinate state with the remote coordinate provided.  It
+// currently tracks by hostname.
 func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
+	// QUESTION: Does this need to be tracked by vnode id rather than host?
 	name := remote.Host
 	return vn.ring.coordClient.Update(name, coord, rtt)
 }
 
-// GetCoordinate returns the vivaldi coordinates for this Vnode
+// GetCoordinate returns the vivaldi coordinates for this Vnode.  All vnodes on given node will have
+// the same coordinates.
 func (vn *localVnode) GetCoordinate() *coordinate.Coordinate {
 	return vn.ring.coordClient.GetCoordinate()
 }
