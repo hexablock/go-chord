@@ -180,17 +180,16 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 		return nil, err
 	}
 
-	respChan := make(chan *Vnode, 1)
+	respChan := make(chan *Response, 1)
 	errChan := make(chan error, 1)
 
 	go func(vnode *Vnode) {
-		//
-		vnd, err := out.client.GetPredecessorServe(context.Background(), vnode)
+		resp, err := out.client.GetPredecessorServe(context.Background(), vnode)
 		// Return the connection
 		cs.returnConn(out)
 
 		if err == nil {
-			respChan <- vnd
+			respChan <- resp
 		} else {
 			errChan <- err
 		}
@@ -202,8 +201,8 @@ func (cs *GRPCTransport) GetPredecessor(vn *Vnode) (*Vnode, error) {
 		return nil, errTimedOut
 	case err := <-errChan:
 		return nil, err
-	case res := <-respChan:
-		return res, nil
+	case resp := <-respChan:
+		return resp.Vnode, nil
 	}
 }
 
@@ -449,30 +448,24 @@ func (cs *GRPCTransport) NotifyServe(ctx context.Context, in *VnodePair) (*Vnode
 }
 
 // GetPredecessorServe serves a GetPredecessor request
-func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*Vnode, error) {
+func (cs *GRPCTransport) GetPredecessorServe(ctx context.Context, in *Vnode) (*Response, error) {
 	obj, ok := cs.get(in)
 
 	var (
-		vn  *Vnode
-		err error
+		// gRPC requires a non-nil response but the vnode may not have a predecessor
+		// returning a nil.  We wrap the response in a Response struct to satisfy
+		// gRPC.
+		resp = &Response{}
+		err  error
 	)
+
 	if ok {
-		vn, err = obj.GetPredecessor()
-		if err == nil {
-
-			//
-			// TODO: Revisit WHY is it returning nil? (I.E. PREDECESSOR IS NIL)
-			//
-
-			if vn == nil {
-				vn = &Vnode{}
-			}
-		}
+		resp.Vnode, err = obj.GetPredecessor()
 	} else {
 		err = fmt.Errorf("target vnode not found: %s/%x", in.Host, in.Id)
 	}
 
-	return vn, err
+	return resp, err
 }
 
 // FindSuccessorsServe serves a FindSuccessors request

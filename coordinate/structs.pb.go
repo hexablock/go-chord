@@ -28,11 +28,26 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Coordinate is a specialized structure for holding network coordinates for the
+// Vivaldi-based coordinate mapping algorithm. All of the fields should be public
+// to enable this to be serialized. All values in here are in units of seconds.
 type Coordinate struct {
-	Vec        []float64 `protobuf:"fixed64,1,rep,packed,name=Vec,json=vec" json:"Vec,omitempty"`
-	Error      float64   `protobuf:"fixed64,2,opt,name=Error,json=error" json:"Error,omitempty"`
-	Adjustment float64   `protobuf:"fixed64,3,opt,name=Adjustment,json=adjustment" json:"Adjustment"`
-	Height     float64   `protobuf:"fixed64,4,opt,name=Height,json=height" json:"Height,omitempty"`
+	// Vec is the Euclidean portion of the coordinate. This is used along
+	// with the other fields to provide an overall distance estimate. The
+	// units here are seconds.
+	Vec []float64 `protobuf:"fixed64,1,rep,packed,name=Vec,json=vec" json:"Vec,omitempty"`
+	// Err reflects the confidence in the given coordinate and is updated
+	// dynamically by the Vivaldi Client. This is dimensionless.
+	Error float64 `protobuf:"fixed64,2,opt,name=Error,json=error" json:"Error,omitempty"`
+	// Adjustment is a distance offset computed based on a calculation over
+	// observations from all other nodes over a fixed window and is updated
+	// dynamically by the Vivaldi Client. The units here are seconds.
+	Adjustment float64 `protobuf:"fixed64,3,opt,name=Adjustment,json=adjustment" json:"Adjustment,omitempty"`
+	// Height is a distance offset that accounts for non-Euclidean effects
+	// which model the access links from nodes to the core Internet. The access
+	// links are usually set by bandwidth and congestion, and the core links
+	// usually follow distance based on geography.
+	Height float64 `protobuf:"fixed64,4,opt,name=Height,json=height" json:"Height,omitempty"`
 }
 
 func (m *Coordinate) Reset()                    { *m = Coordinate{} }

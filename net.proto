@@ -8,7 +8,7 @@ service chord {
     rpc ListVnodesServe(StringParam) returns (VnodeList) {}
     rpc PingServe(VnodePair) returns (Response) {}
     rpc NotifyServe(VnodePair) returns (VnodeList) {}
-    rpc GetPredecessorServe(Vnode) returns (Vnode) {}
+    rpc GetPredecessorServe(Vnode) returns (Response) {}
     rpc FindSuccessorsServe(FindSuccReq) returns (VnodeList) {}
     rpc ClearPredecessorServe(VnodePair) returns (Response) {}
     rpc SkipSuccessorServe(VnodePair) returns (Response) {}
@@ -20,10 +20,11 @@ message Vnode {
     bytes meta = 3;
 }
 
-// Generic response
+// Generic response fields are available based on the type of response
 message Response {
     coordinate.Coordinate Coordinate = 1;
     bool Ok = 2;
+    Vnode Vnode = 3;
 }
 
 message VnodeList {
