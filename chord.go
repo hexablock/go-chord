@@ -1,5 +1,5 @@
 //
-// Chord package is used to provide an implementation of the Chord network protocol.
+// Package chord is used to provide an implementation of the Chord network protocol.
 //
 package chord
 
@@ -59,6 +59,7 @@ type Delegate interface {
 // Meta holds metadata for a node
 type Meta map[string][]byte
 
+// MarshalBinary marshals Meta to bytes
 func (meta Meta) MarshalBinary() ([]byte, error) {
 	lines := make([][]byte, len(meta))
 
@@ -71,6 +72,7 @@ func (meta Meta) MarshalBinary() ([]byte, error) {
 	return bytes.Join(lines, []byte(" ")), nil
 }
 
+// UnmarshalBinary unmarshals bytes into Meta
 func (meta Meta) UnmarshalBinary(b []byte) error {
 	lines := bytes.Split(b, []byte(" "))
 	for _, line := range lines {
