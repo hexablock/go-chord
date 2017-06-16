@@ -8,6 +8,7 @@ import (
 
 // VnodeStatus holds the status for a single Vnode
 type VnodeStatus struct {
+	Vnode          Vnode
 	LastStabilized time.Time
 	Predecessor    *Vnode
 	Successors     []*Vnode
@@ -32,6 +33,7 @@ func (r *Ring) Status() *Status {
 
 	for i, vn := range r.vnodes {
 		status.Vnodes[i] = &VnodeStatus{
+			Vnode:          vn.Vnode,
 			LastStabilized: vn.stabilized,
 			Predecessor:    vn.predecessor,
 			Successors:     vn.successors,

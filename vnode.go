@@ -22,6 +22,7 @@ func (vn *Vnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"Id":   hex.EncodeToString(vn.Id),
 		"Host": vn.Host,
+		"Meta": string(vn.Meta),
 	})
 }
 

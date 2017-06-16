@@ -63,32 +63,6 @@ type Delegate interface {
 // Meta holds metadata for a node
 type Meta map[string][]byte
 
-// MarshalBinary marshals Meta to bytes
-func (meta Meta) MarshalBinary() ([]byte, error) {
-	lines := make([][]byte, len(meta))
-
-	i := 0
-	for k, v := range meta {
-		lines[i] = append(append([]byte(k), []byte("=")...), v...)
-		i++
-	}
-
-	return bytes.Join(lines, []byte(" ")), nil
-}
-
-// UnmarshalBinary unmarshals bytes into Meta
-func (meta Meta) UnmarshalBinary(b []byte) error {
-	lines := bytes.Split(b, []byte(" "))
-	for _, line := range lines {
-		arr := bytes.Split(line, []byte("="))
-		if len(arr) != 2 {
-			return fmt.Errorf("invalid data: %s", line)
-		}
-		meta[string(arr[0])] = arr[1]
-	}
-	return nil
-}
-
 // Config for Chord nodes
 type Config struct {
 	Hostname          string           // Local host name
@@ -123,6 +97,37 @@ type Ring struct {
 	delegateCh  chan func()
 	coordClient *coordinate.Client // vivaldi coordinate client
 	shutdown    chan bool
+}
+
+// MarshalBinary marshals Meta to bytes
+func (meta Meta) MarshalBinary() ([]byte, error) {
+	lines := make([][]byte, len(meta))
+
+	i := 0
+	for k, v := range meta {
+		lines[i] = append(append([]byte(k), []byte("=")...), v...)
+		i++
+	}
+
+	return bytes.Join(lines, []byte(",")), nil
+}
+
+func (meta Meta) String() string {
+	b, _ := meta.MarshalBinary()
+	return string(b)
+}
+
+// UnmarshalBinary unmarshals bytes into Meta
+func (meta Meta) UnmarshalBinary(b []byte) error {
+	lines := bytes.Split(b, []byte(","))
+	for _, line := range lines {
+		arr := bytes.Split(line, []byte("="))
+		if len(arr) != 2 {
+			return fmt.Errorf("invalid data: %s", line)
+		}
+		meta[string(arr[0])] = arr[1]
+	}
+	return nil
 }
 
 // DefaultConfig returns the default Ring configuration

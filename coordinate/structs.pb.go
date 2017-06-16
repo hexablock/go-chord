@@ -31,7 +31,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Coordinate struct {
 	Vec        []float64 `protobuf:"fixed64,1,rep,packed,name=Vec,json=vec" json:"Vec,omitempty"`
 	Error      float64   `protobuf:"fixed64,2,opt,name=Error,json=error" json:"Error,omitempty"`
-	Adjustment float64   `protobuf:"fixed64,3,opt,name=Adjustment,json=adjustment" json:"Adjustment,omitempty"`
+	Adjustment float64   `protobuf:"fixed64,3,opt,name=Adjustment,json=adjustment" json:"Adjustment"`
 	Height     float64   `protobuf:"fixed64,4,opt,name=Height,json=height" json:"Height,omitempty"`
 }
 
