@@ -125,8 +125,9 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	}
 }
 
-// Ping a Vnode to check for liveness.  self is the caller Vnode to determine rtt's from each
-// vnode's perspective.
+// Ping pings a Vnode to check for liveness and updates the vnode coordinates.
+// Self is the caller Vnode and is used to determine rtt's from its vnodes
+// perspective.
 func (cs *GRPCTransport) Ping(self, target *Vnode) (bool, error) {
 	out, err := cs.getConn(target.Host)
 	if err != nil {

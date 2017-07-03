@@ -205,6 +205,10 @@ func (r *Ring) LookupHash(n int, hash []byte) (*Vnode, []*Vnode, error) {
 	if n > r.config.NumSuccessors {
 		return nil, nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
 	}
+	// Ensure hash size matches what is configured
+	if len(hash) != r.config.HashFunc().Size() {
+		return nil, nil, fmt.Errorf("invalid hash size")
+	}
 
 	// Find the nearest local vnode
 	nearest := r.nearestVnode(hash)
