@@ -95,13 +95,14 @@ type Ring struct {
 	shutdown    chan bool
 }
 
-// DefaultConfig returns the default Ring configuration
+// DefaultConfig returns the default Ring configuration.  It uses SHA1 as the
+// default hash function
 func DefaultConfig(hostname string) *Config {
 	return &Config{
 		Hostname:          hostname,
 		Meta:              make(Meta),
 		NumVnodes:         8,
-		HashFunc:          sha1.New, // sha1
+		HashFunc:          sha1.New,
 		StabilizeMin:      time.Duration(15 * time.Second),
 		StabilizeMax:      time.Duration(45 * time.Second),
 		NumSuccessors:     8,
@@ -198,13 +199,15 @@ func (r *Ring) Shutdown() {
 	r.stopDelegate()
 }
 
-// LookupHash does a lookup for up to N successors of a hash.  It returns the predecessor and up
-// to N successors. The hash size must match the hash function used when init'ing the ring.
+// LookupHash does a lookup for up to N successors of a hash.  It returns the
+// predecessor and up to N successors. The hash size must match the hash function
+// used when init'ing the ring.
 func (r *Ring) LookupHash(n int, hash []byte) (*Vnode, []*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
 		return nil, nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
 	}
+
 	// Ensure hash size matches what is configured
 	if len(hash) != r.config.HashFunc().Size() {
 		return nil, nil, fmt.Errorf("invalid hash size")
