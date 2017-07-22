@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"hash"
+	"sync"
 	"time"
 
 	"github.com/hexablock/go-chord/coordinate"
@@ -76,8 +77,11 @@ type Config struct {
 // Represents a local Vnode
 type localVnode struct {
 	Vnode
-	ring        *Ring
-	successors  []*Vnode
+	ring *Ring
+
+	succLock   sync.RWMutex
+	successors []*Vnode
+
 	finger      []*Vnode
 	lastFinger  int
 	predecessor *Vnode
@@ -93,6 +97,11 @@ type Ring struct {
 	delegateCh  chan func()        // channel for delegate callbacks
 	coordClient *coordinate.Client // vivaldi coordinate client
 	shutdown    chan bool
+}
+
+// HashBits returns the number of hash bits
+func (config *Config) HashBits() int {
+	return config.hashBits
 }
 
 // DefaultConfig returns the default Ring configuration.  It uses SHA1 as the
@@ -202,41 +211,40 @@ func (r *Ring) Shutdown() {
 // LookupHash does a lookup for up to N successors of a hash.  It returns the
 // predecessor and up to N successors. The hash size must match the hash function
 // used when init'ing the ring.
-func (r *Ring) LookupHash(n int, hash []byte) (*Vnode, []*Vnode, error) {
+func (r *Ring) LookupHash(n int, hash []byte) ([]*Vnode, error) {
 	// Ensure that n is sane
 	if n > r.config.NumSuccessors {
-		return nil, nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
+		return nil, fmt.Errorf("cannot ask for more successors than NumSuccessors")
 	}
 
 	// Ensure hash size matches what is configured
 	if len(hash) != r.config.HashFunc().Size() {
-		return nil, nil, fmt.Errorf("invalid hash size")
+		return nil, fmt.Errorf("invalid hash size")
 	}
 
 	// Find the nearest local vnode
 	nearest := r.nearestVnode(hash)
-	pred := nearest.Vnode
 	// Use the nearest node for the lookup
 	successors, err := nearest.FindSuccessors(n, hash)
 	if err != nil {
-		return &pred, nil, err
+		return nil, err
 	}
 
 	// Trim the nil successors
 	for successors[len(successors)-1] == nil {
 		successors = successors[:len(successors)-1]
 	}
-	return &pred, successors, nil
+	return successors, nil
 }
 
 // Lookup does a lookup for up to N successors on the hash of a key.  It returns the hash of the key used to
 // perform the lookup, the closest vnode and up to N successors.
-func (r *Ring) Lookup(n int, key []byte) ([]byte, *Vnode, []*Vnode, error) {
+func (r *Ring) Lookup(n int, key []byte) ([]byte, []*Vnode, error) {
 	// Hash the key
 	h := r.config.HashFunc()
 	h.Write(key)
 	kh := h.Sum(nil)
 
-	nearest, succs, err := r.LookupHash(n, kh)
-	return kh, nearest, succs, err
+	succs, err := r.LookupHash(n, kh)
+	return kh, succs, err
 }

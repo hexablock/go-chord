@@ -225,7 +225,7 @@ func TestLookupBadN(t *testing.T) {
 		t.Fatalf("unexpected err. %s", err)
 	}
 
-	_, _, _, err = r.Lookup(10, []byte("test"))
+	_, _, err = r.Lookup(10, []byte("test"))
 	if err == nil {
 		t.Fatalf("expected err!")
 	}
@@ -256,20 +256,20 @@ func TestLookup(t *testing.T) {
 	// Try key lookup
 	keys := [][]byte{[]byte("test"), []byte("foo"), []byte("bar")}
 	for _, k := range keys {
-		kh1, n1, vn1, err := r.Lookup(3, k)
+		kh1, vn1, err := r.Lookup(3, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}
-		if kh1 == nil || n1 == nil {
-			t.Error("KeyHash or nearest should not be nil")
+		if kh1 == nil {
+			t.Error("KeyHash  should not be nil")
 		}
 
-		kh2, n2, vn2, err := r2.Lookup(3, k)
+		kh2, vn2, err := r2.Lookup(3, k)
 		if err != nil {
 			t.Fatalf("unexpected err %s", err)
 		}
-		if kh2 == nil || n2 == nil {
-			t.Error("KeyHash or nearest should not be nil")
+		if kh2 == nil {
+			t.Error("KeyHash should not be nil")
 		}
 
 		if len(vn1) != len(vn2) {

@@ -51,6 +51,6 @@ func TestStatus(t *testing.T) {
 		t.Error("status vnode count mismatch")
 	}
 
-	b, _ := json.MarshalIndent(s1, "", " ")
+	b, _ := json.Marshal(s1)
 	t.Logf("%s", b)
 }
