@@ -79,14 +79,21 @@ type localVnode struct {
 	Vnode
 	ring *Ring
 
+	// Successor list and its lock
 	succLock   sync.RWMutex
 	successors []*Vnode
 
-	finger      []*Vnode
-	lastFinger  int
+	// Finger table and its lock
+	fingLock   sync.RWMutex
+	finger     []*Vnode
+	lastFinger int
+
+	// Predecessor and its lock
+	predLock    sync.RWMutex
 	predecessor *Vnode
-	stabilized  time.Time // Last stabilized time
-	timer       *time.Timer
+
+	stabilized time.Time   // Last stabilized time
+	timer      *time.Timer // stabilization timer
 }
 
 // Ring stores the state required for a Chord ring
@@ -96,7 +103,8 @@ type Ring struct {
 	vnodes      []*localVnode
 	delegateCh  chan func()        // channel for delegate callbacks
 	coordClient *coordinate.Client // vivaldi coordinate client
-	shutdown    chan bool
+	shutdown    chan bool          // channel to wait for vnodes to shutdown
+	sigshut     int32              // signal shutdown
 }
 
 // HashBits returns the number of hash bits
@@ -204,6 +212,7 @@ func (r *Ring) Leave() error {
 // Shutdown shuts down the local processes in a given Chord ring
 // Blocks until all the vnodes terminate.
 func (r *Ring) Shutdown() {
+	// Stop vnodes first
 	r.stopVnodes()
 	r.stopDelegate()
 }

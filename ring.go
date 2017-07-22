@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"sort"
+	"sync/atomic"
 
 	"github.com/hexablock/go-chord/coordinate"
 )
@@ -31,6 +32,7 @@ func (r *Ring) init(conf *Config, trans Transport) {
 	r.vnodes = make([]*localVnode, conf.NumVnodes)
 	r.transport = InitLocalTransport(trans)
 	r.delegateCh = make(chan func(), conf.DelegateQueueSize)
+	r.shutdown = make(chan bool, conf.NumVnodes)
 
 	// Initializes the vnodes
 	for i := 0; i < conf.NumVnodes; i++ {
@@ -85,17 +87,20 @@ func (r *Ring) schedule() {
 
 // Wait for all the vnodes to shutdown
 func (r *Ring) stopVnodes() {
-	r.shutdown = make(chan bool, r.config.NumVnodes)
+	//r.shutdown = make(chan bool, r.config.NumVnodes)
+	atomic.StoreInt32(&r.sigshut, 1)
+
 	for i := 0; i < r.config.NumVnodes; i++ {
 		<-r.shutdown
 	}
+
 }
 
 // Stops the delegate handler
 func (r *Ring) stopDelegate() {
 	if r.config.Delegate != nil {
 		// Wait for all delegate messages to be processed
-		<-r.invokeDelegate(r.config.Delegate.Shutdown)
+		<-r.invokeDelegate(func(...*Vnode) { r.config.Delegate.Shutdown() })
 		close(r.delegateCh)
 	}
 }
@@ -112,7 +117,7 @@ func (r *Ring) setLocalSuccessors() {
 }
 
 // Invokes a function on the delegate and returns completion channel
-func (r *Ring) invokeDelegate(f func()) chan struct{} {
+func (r *Ring) invokeDelegate(f func(...*Vnode), vns ...*Vnode) chan struct{} {
 	if r.config.Delegate == nil {
 		return nil
 	}
@@ -122,7 +127,7 @@ func (r *Ring) invokeDelegate(f func()) chan struct{} {
 		defer func() {
 			ch <- struct{}{}
 		}()
-		f()
+		f(vns...)
 	}
 
 	r.delegateCh <- wrapper
