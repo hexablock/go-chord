@@ -28,7 +28,7 @@ func (r *Ring) Status() *Status {
 	status := &Status{
 		Hostname:      r.config.Hostname,
 		HashBits:      r.config.hashBits,
-		Coordinate:    r.coordClient.GetCoordinate(),
+		Coordinate:    r.Coordinate(),
 		Vnodes:        make([]*VnodeStatus, len(r.vnodes)),
 		Meta:          r.config.Meta,
 		DelegateQueue: fmt.Sprintf("%d/%d", len(r.delegateCh), r.config.DelegateQueueSize),
