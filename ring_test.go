@@ -129,6 +129,7 @@ func TestRingSchedule(t *testing.T) {
 			t.Fatalf("expected timer!")
 		}
 	}
+
 	ring.stopVnodes()
 }
 
@@ -170,7 +171,7 @@ func TestRingDelegate(t *testing.T) {
 	ring.schedule()
 
 	var b bool
-	f := func() {
+	f := func(...*Vnode) {
 		println("run!")
 		b = true
 	}

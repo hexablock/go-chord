@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/hexablock/go-chord/coordinate"
@@ -49,12 +50,6 @@ func (vn *localVnode) init(idx int) {
 	vn.ring.transport.Register(&vn.Vnode, vn)
 }
 
-// Schedules the Vnode to do regular maintenence
-func (vn *localVnode) schedule() {
-	// Setup our stabilize timer
-	vn.timer = time.AfterFunc(randStabilize(vn.ring.config), vn.stabilize)
-}
-
 // Generates an ID for the node
 func (vn *localVnode) genID(idx uint16) {
 	// Use the hash funciton
@@ -67,19 +62,30 @@ func (vn *localVnode) genID(idx uint16) {
 	vn.Id = hash.Sum(nil)
 }
 
+// Schedules the Vnode to do regular maintenence
+func (vn *localVnode) schedule() {
+	// Setup our stabilize timer
+	vn.timer = time.AfterFunc(randStabilize(vn.ring.config), vn.stabilize)
+}
+
 // Called to periodically stabilize the vnode
 func (vn *localVnode) stabilize() {
+	// QUESTION:
+	// The clearing of the timer may need to be re-enabled.  It is currently disabled as it
+	// introduces a race condition.  Currently no effects are seen by disabling it.  The
+	// corresponding unit test must also be enabled.
+
 	// Clear the timer
-	vn.timer = nil
+	//vn.timer = nil
 
 	// Check for shutdown
-	if vn.ring.shutdown != nil {
+	if atomic.LoadInt32(&vn.ring.sigshut) == 1 {
 		vn.ring.shutdown <- true
 		return
 	}
 
 	// Setup the next stabilize timer
-	defer vn.schedule()
+	//defer vn.schedule()
 
 	// Check for new successor
 	if err := vn.checkNewSuccessor(); err != nil {
@@ -103,6 +109,9 @@ func (vn *localVnode) stabilize() {
 
 	// Set the last stabilized time
 	vn.stabilized = time.Now()
+
+	// Setup the next stabilize timer
+	vn.schedule()
 }
 
 // Checks for a new successor
@@ -111,14 +120,19 @@ func (vn *localVnode) checkNewSuccessor() error {
 	trans := vn.ring.transport
 
 CHECK_NEW_SUC:
+	vn.succLock.RLock()
 	succ := vn.successors[0]
 	if succ == nil {
+		vn.succLock.RUnlock()
 		panic("Node has no successor!")
 	}
+
 	maybeSuc, err := trans.GetPredecessor(succ)
 	if err != nil {
 		// Check if we have succ list, try to contact next live succ
 		known := vn.knownSuccessors()
+		vn.succLock.RUnlock()
+
 		if known > 1 {
 			for i := 0; i < known; i++ {
 				if alive, _ := trans.Ping(&vn.Vnode, vn.successors[0]); !alive {
@@ -128,8 +142,11 @@ CHECK_NEW_SUC:
 					}
 
 					// Advance the successors list past the dead one
+					vn.succLock.Lock()
 					copy(vn.successors[0:], vn.successors[1:])
 					vn.successors[known-1-i] = nil
+					vn.succLock.Unlock()
+
 				} else {
 					// Found live successor, check for new one
 					goto CHECK_NEW_SUC
@@ -138,14 +155,19 @@ CHECK_NEW_SUC:
 		}
 		return err
 	}
+	vn.succLock.RUnlock()
 
 	// Check if we should replace our successor
 	if maybeSuc != nil && between(vn.Id, succ.Id, maybeSuc.Id) {
 		// Check if new successor is alive before switching
 		alive, err := trans.Ping(&vn.Vnode, maybeSuc)
 		if alive && err == nil {
+
+			vn.succLock.Lock()
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybeSuc
+			vn.succLock.Unlock()
+
 		} else {
 			return err
 		}
@@ -153,70 +175,82 @@ CHECK_NEW_SUC:
 	return nil
 }
 
-// UpdateCoordinate updates the local coordinate state with the remote coordinate provided.  It
-// currently tracks by hostname.
-func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
-	// QUESTION: Does this need to be tracked by vnode id rather than host?
-	name := remote.Host
-	return vn.ring.coordClient.Update(name, coord, rtt)
-}
-
-// GetCoordinate returns the vivaldi coordinates for this Vnode.  All vnodes on given node will have
-// the same coordinates.
-func (vn *localVnode) GetCoordinate() *coordinate.Coordinate {
-	return vn.ring.coordClient.GetCoordinate()
-}
-
 // RPC: Invoked to return out predecessor
 func (vn *localVnode) GetPredecessor() (*Vnode, error) {
+	vn.predLock.RLock()
+	defer vn.predLock.RUnlock()
 	return vn.predecessor, nil
 }
 
 // Notifies our successor of us, updates successor list
 func (vn *localVnode) notifySuccessor() error {
-	// Notify successor
+	maxSucc := vn.ring.config.NumSuccessors
+
+	// Get successor
+	vn.succLock.RLock()
 	succ := vn.successors[0]
+	vn.succLock.RUnlock()
+
+	// Notify successor
 	succList, err := vn.ring.transport.Notify(succ, &vn.Vnode)
 	if err != nil {
 		return err
 	}
 
 	// Trim the successors list if too long
-	maxSucc := vn.ring.config.NumSuccessors
 	if len(succList) > maxSucc-1 {
 		succList = succList[:maxSucc-1]
 	}
 
 	// Update local successors list
 	for idx, s := range succList {
-		if s == nil {
-			break
-		}
 		// Ensure we don't set ourselves as a successor!
 		if s == nil || s.StringID() == vn.StringID() {
 			break
 		}
+
+		vn.succLock.Lock()
 		vn.successors[idx+1] = s
+		vn.succLock.Unlock()
 	}
+
 	return nil
 }
 
 // Notify is invoked when a Vnode gets notified
 func (vn *localVnode) Notify(maybePred *Vnode) ([]*Vnode, error) {
+	vn.predLock.RLock()
+
 	// Check if we should update our predecessor
 	if vn.predecessor == nil || between(vn.predecessor.Id, vn.Id, maybePred.Id) {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
-		vn.ring.invokeDelegate(func() {
-			conf.Delegate.NewPredecessor(&vn.Vnode, maybePred, old)
-		})
 
+		vn.predLock.RUnlock()
+
+		vn.ring.invokeDelegate(func(vns ...*Vnode) {
+			conf.Delegate.NewPredecessor(vns[0], vns[1], vns[2])
+		}, &vn.Vnode, maybePred, old)
+
+		vn.predLock.Lock()
 		vn.predecessor = maybePred
+		vn.predLock.Unlock()
+
+	} else {
+		vn.predLock.RUnlock()
 	}
 
 	// Return our successors list
-	return vn.successors, nil
+	return vn.Successors(), nil
+}
+
+// Successors returns the current successors in a thread-safe manner.
+func (vn *localVnode) Successors() []*Vnode {
+	vn.succLock.RLock()
+	defer vn.succLock.RUnlock()
+
+	return vn.successors
 }
 
 // Fixes up the finger table
@@ -230,9 +264,16 @@ func (vn *localVnode) fixFingerTable() error {
 	if nodes == nil || len(nodes) == 0 || err != nil {
 		return err
 	}
+
+	vn.succLock.RLock()
+	defer vn.succLock.RUnlock()
+
 	node := nodes[0]
 
 	// Update the finger table
+	vn.fingLock.Lock()
+	defer vn.fingLock.Unlock()
+
 	vn.finger[vn.lastFinger] = node
 
 	// Try to skip as many finger entries as possible
@@ -262,29 +303,41 @@ func (vn *localVnode) fixFingerTable() error {
 	return nil
 }
 
-// Checks the health of our predecessor
+// Checks the health of our predecessor.  If it fails the predecessor is set to nil
 func (vn *localVnode) checkPredecessor() error {
-	// Check predecessor
+	vn.predLock.RLock()
 	if vn.predecessor != nil {
+
 		res, err := vn.ring.transport.Ping(&vn.Vnode, vn.predecessor)
+		vn.predLock.RUnlock()
 		if err != nil {
 			return err
 		}
 
 		// Predecessor is dead
 		if !res {
+			vn.predLock.Lock()
 			vn.predecessor = nil
+			vn.predLock.Unlock()
 		}
+
+	} else {
+		vn.predLock.RUnlock()
 	}
+
 	return nil
 }
 
 // Finds next N successors. N must be <= NumSuccessors
 func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
+
+	vn.succLock.RLock()
 	// Check if we are the immediate predecessor
 	if betweenRightIncl(vn.Id, vn.successors[0].Id, key) {
+		defer vn.succLock.RUnlock()
 		return vn.successors[:n], nil
 	}
+	vn.succLock.RUnlock()
 
 	// Try the closest preceeding nodes
 	cp := closestPreceedingVnodeIterator{}
@@ -304,10 +357,13 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		log.Printf("[ERR] Failed to contact %s. Got %s", closest.StringID(), err)
 	}
 
+	// Check if the ID is between us and any non-immediate successors
+	vn.succLock.RLock()
+	defer vn.succLock.RUnlock()
+
 	// Determine how many successors we know of
 	successors := vn.knownSuccessors()
 
-	// Check if the ID is between us and any non-immediate successors
 	for i := 1; i <= successors-n; i++ {
 		if betweenRightIncl(vn.Id, vn.successors[i].Id, key) {
 			remain := vn.successors[i:]
@@ -324,17 +380,26 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 
 // Instructs the vnode to leave
 func (vn *localVnode) leave() error {
+	var (
+		conf  = vn.ring.config
+		trans = vn.ring.transport
+		err   error
+	)
+
+	vn.succLock.RLock()
+	defer vn.succLock.RUnlock()
+
+	vn.predLock.RLock()
+	defer vn.predLock.RUnlock()
+
 	// Inform the delegate we are leaving
-	conf := vn.ring.config
 	pred := vn.predecessor
 	succ := vn.successors[0]
-	vn.ring.invokeDelegate(func() {
-		conf.Delegate.Leaving(&vn.Vnode, pred, succ)
-	})
+	vn.ring.invokeDelegate(func(vns ...*Vnode) {
+		conf.Delegate.Leaving(vns[0], vns[1], vns[2])
+	}, &vn.Vnode, pred, succ)
 
 	// Notify predecessor to advance to their next successor
-	var err error
-	trans := vn.ring.transport
 	if vn.predecessor != nil {
 		err = trans.SkipSuccessor(vn.predecessor, &vn.Vnode)
 	}
@@ -346,42 +411,89 @@ func (vn *localVnode) leave() error {
 
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
+	vn.predLock.RLock()
 	if vn.predecessor != nil && vn.predecessor.StringID() == p.StringID() {
 		// Inform the delegate
 		conf := vn.ring.config
 		old := vn.predecessor
-		vn.ring.invokeDelegate(func() {
-			conf.Delegate.PredecessorLeaving(&vn.Vnode, old)
-		})
+
+		vn.predLock.RUnlock()
+
+		vn.ring.invokeDelegate(func(vns ...*Vnode) {
+			conf.Delegate.PredecessorLeaving(vns[0], vns[1])
+		}, &vn.Vnode, old)
+
+		vn.predLock.Lock()
 		vn.predecessor = nil
+		vn.predLock.Unlock()
+
+	} else {
+		vn.predLock.RUnlock()
 	}
+
 	return nil
 }
 
 // Used to skip a successor when a node is leaving
 func (vn *localVnode) SkipSuccessor(s *Vnode) error {
-	// Skip if we have a match
-	if vn.successors[0].StringID() == s.StringID() {
-		// Inform the delegate
-		conf := vn.ring.config
-		old := vn.successors[0]
-		vn.ring.invokeDelegate(func() {
-			conf.Delegate.SuccessorLeaving(&vn.Vnode, old)
-		})
 
-		known := vn.knownSuccessors()
-		copy(vn.successors[0:], vn.successors[1:])
-		vn.successors[known-1] = nil
+	conf := vn.ring.config
+
+	vn.succLock.RLock()
+	// Return if we have no match
+	if vn.successors[0].StringID() != s.StringID() {
+		vn.succLock.RUnlock()
+		return nil
 	}
+
+	old := vn.successors[0]
+	known := vn.knownSuccessors()
+	vn.succLock.RUnlock()
+
+	// Inform the delegate
+	vn.ring.invokeDelegate(func(vns ...*Vnode) {
+		//conf.Delegate.SuccessorLeaving(&vn.Vnode, old)
+		conf.Delegate.SuccessorLeaving(vns[0], vns[1])
+	}, &vn.Vnode, old)
+
+	vn.succLock.Lock()
+	copy(vn.successors[0:], vn.successors[1:])
+	vn.successors[known-1] = nil
+	vn.succLock.Unlock()
+
 	return nil
 }
 
-// Determine how many successors we know of
+// Determine how many successors we know of.  The caller is responsible for obtaining at
+// least a read-lock before calling this function
 func (vn *localVnode) knownSuccessors() (successors int) {
 	for i := 0; i < len(vn.successors); i++ {
 		if vn.successors[i] != nil {
 			successors = i + 1
 		}
 	}
+
 	return
+}
+
+func (vn *localVnode) Status() *VnodeStatus {
+	return &VnodeStatus{
+		Vnode:          vn.Vnode,
+		LastStabilized: vn.stabilized,
+	}
+}
+
+// UpdateCoordinate updates the local coordinate state with the remote coordinate provided.  It
+// currently tracks by hostname.
+func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
+	// QUESTION: Does this need to be tracked by vnode id rather than host?
+	name := remote.Host
+	// Update the coordates based on the remote vnode
+	return vn.ring.coordClient.Update(name, coord, rtt)
+}
+
+// GetCoordinate returns the vivaldi coordinates for this Vnode.  All vnodes on given node will have
+// the same coordinates.
+func (vn *localVnode) GetCoordinate() *coordinate.Coordinate {
+	return vn.ring.coordClient.GetCoordinate()
 }

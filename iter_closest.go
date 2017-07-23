@@ -28,6 +28,8 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 	// Scan to find the next successor
 	vn := cp.vn
 	var i int
+
+	vn.succLock.RLock()
 	for i = cp.successorIdx; i >= 0; i-- {
 		if vn.successors[i] == nil {
 			continue
@@ -40,9 +42,11 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 			break
 		}
 	}
+	vn.succLock.RUnlock()
 	cp.successorIdx = i
 
 	// Scan to find the next finger
+	vn.fingLock.RLock()
 	for i = cp.fingerIdx; i >= 0; i-- {
 		if vn.finger[i] == nil {
 			continue
@@ -55,6 +59,7 @@ func (cp *closestPreceedingVnodeIterator) Next() *Vnode {
 			break
 		}
 	}
+	vn.fingLock.RUnlock()
 	cp.fingerIdx = i
 
 	// Determine which node is better

@@ -261,7 +261,7 @@ func TestLookup(t *testing.T) {
 			t.Fatalf("unexpected err %s", err)
 		}
 		if kh1 == nil {
-			t.Error("KeyHash or nearest should not be nil")
+			t.Error("KeyHash  should not be nil")
 		}
 
 		kh2, vn2, err := r2.Lookup(3, k)
@@ -269,7 +269,7 @@ func TestLookup(t *testing.T) {
 			t.Fatalf("unexpected err %s", err)
 		}
 		if kh2 == nil {
-			t.Error("KeyHash or nearest should not be nil")
+			t.Error("KeyHash should not be nil")
 		}
 
 		if len(vn1) != len(vn2) {
