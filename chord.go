@@ -18,6 +18,9 @@ type Transport interface {
 	// Gets a list of the vnodes on the box
 	ListVnodes(string) ([]*Vnode, error)
 
+	// Get the coordinates for a vnode
+	GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error)
+
 	// Ping a Vnode, check for liveness
 	Ping(self, target *Vnode) (bool, error)
 
@@ -99,7 +102,7 @@ type localVnode struct {
 // Ring stores the state required for a Chord ring
 type Ring struct {
 	config      *Config
-	transport   Transport
+	transport   Transport // Transport to handle local and remote efficiently
 	vnodes      []*localVnode
 	delegateCh  chan func()        // channel for delegate callbacks
 	coordClient *coordinate.Client // vivaldi coordinate client
@@ -217,9 +220,9 @@ func (r *Ring) Shutdown() {
 	r.stopDelegate()
 }
 
-// Coordinate returns the coordinate for this node
-func (r *Ring) Coordinate() *coordinate.Coordinate {
-	return r.coordClient.GetCoordinate()
+// LookupCoordinate returns the coordinate for the given vnode
+func (r *Ring) LookupCoordinate(vn *Vnode) (*coordinate.Coordinate, error) {
+	return r.transport.GetCoordinate(vn)
 }
 
 // LookupHash does a lookup for up to N successors of a hash.  It returns the

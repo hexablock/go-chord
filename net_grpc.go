@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hexablock/go-chord/coordinate"
+
 	context "golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -94,6 +96,41 @@ func (cs *GRPCTransport) ListVnodes(host string) ([]*Vnode, error) {
 	case res := <-respChan:
 		return res, nil
 	}
+}
+
+// GetCoordinate gets the coordinates for the given remote vnode
+func (cs *GRPCTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error) {
+	// Get a conn
+	out, err := cs.getConn(vn.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	respChan := make(chan *Response, 1)
+	errChan := make(chan error, 1)
+
+	go func(vnode *Vnode) {
+		resp, err := out.client.GetCoordinateServe(context.Background(), vnode)
+		// Return the connection
+		cs.returnConn(out)
+
+		if err == nil {
+			respChan <- resp
+		} else {
+			errChan <- err
+		}
+
+	}(vn)
+
+	select {
+	case <-time.After(cs.timeout):
+		return nil, errTimedOut
+	case err := <-errChan:
+		return nil, err
+	case resp := <-respChan:
+		return resp.Coordinate, nil
+	}
+
 }
 
 // Ping pings a Vnode to check for liveness and updates the vnode coordinates.
@@ -491,6 +528,22 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 		err = obj.SkipSuccessor(in.Self)
 	} else {
 		err = fmt.Errorf("target vnode not found: %s/%x", in.Target.Host, in.Target.Id)
+	}
+
+	return resp, err
+}
+
+// GetCoordinateServe serves a GetCoordinate request returning the Coordinate for this node
+func (cs *GRPCTransport) GetCoordinateServe(ctx context.Context, vn *Vnode) (*Response, error) {
+	var (
+		obj, ok = cs.get(vn)
+		resp    = &Response{}
+		err     error
+	)
+	if ok {
+		resp.Coordinate = obj.GetCoordinate()
+	} else {
+		err = fmt.Errorf("target vnode not found: %s/%x", vn.Host, vn.Id)
 	}
 
 	return resp, err

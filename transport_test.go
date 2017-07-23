@@ -319,3 +319,12 @@ func TestBHSkipSucc(t *testing.T) {
 		t.Fatalf("expected fail")
 	}
 }
+
+func TestBHGetCoord(t *testing.T) {
+	bh := BlackholeTransport{}
+	vn := &Vnode{Id: []byte{12}}
+	_, err := bh.GetCoordinate(vn)
+	if !strings.Contains(err.Error(), "failed to connect") {
+		t.Fatalf("expected fail")
+	}
+}

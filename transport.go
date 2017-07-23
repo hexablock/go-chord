@@ -3,6 +3,8 @@ package chord
 import (
 	"fmt"
 	"sync"
+
+	"github.com/hexablock/go-chord/coordinate"
 )
 
 // Wraps vnode and object
@@ -63,6 +65,18 @@ func (lt *LocalTransport) ListVnodes(host string) ([]*Vnode, error) {
 
 	// Pass onto remote
 	return lt.remote.ListVnodes(host)
+}
+
+// GetCoordinate gets the coordinates for a vnode
+func (lt *LocalTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error) {
+	// Look for it locally
+	obj, ok := lt.get(vn)
+	// If it exists locally, handle it
+	if ok {
+		return obj.GetCoordinate(), nil
+	}
+	// Pass onto remote
+	return lt.remote.GetCoordinate(vn)
 }
 
 // Ping pings a local or remote Vnode
@@ -165,6 +179,11 @@ type BlackholeTransport struct{}
 // ListVnodes is a no-op call
 func (*BlackholeTransport) ListVnodes(host string) ([]*Vnode, error) {
 	return nil, fmt.Errorf("failed to connect blackhole: %s", host)
+}
+
+// GetCoordinate is a no-op call
+func (*BlackholeTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error) {
+	return nil, fmt.Errorf("failed to connect blackhole: %s", vn.StringID())
 }
 
 // Ping is a no-op call

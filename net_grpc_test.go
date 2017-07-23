@@ -102,3 +102,42 @@ func TestGRPCLeave(t *testing.T) {
 		}
 	}
 }
+
+func TestGRPCCoordinate(t *testing.T) {
+	// Prepare to create 2 nodes
+	c1, t1, err := prepRingGrpc(20037)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+	c2, t2, err := prepRingGrpc(20038)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	// Create initial ring
+	r1, err := Create(c1, t1)
+	if err != nil {
+		t.Fatalf("unexpected err. %s", err)
+	}
+
+	// Join ring
+	r2, err := Join(c2, t2, c1.Hostname)
+	if err != nil {
+		t.Fatalf("failed to join local node! Got %s", err)
+	}
+
+	// Wait for some stabilization
+	<-time.After(100 * time.Millisecond)
+
+	vns, _ := r2.transport.ListVnodes("127.0.0.1:20038")
+	co, err := r1.LookupCoordinate(vns[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if co == nil {
+		t.Fatal("coords should not be nil")
+	}
+
+	r1.Shutdown()
+	r2.Shutdown()
+}

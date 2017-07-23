@@ -4,6 +4,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/hexablock/go-chord/coordinate"
 )
 
 type MultiLocalTrans struct {
@@ -24,6 +26,13 @@ func (ml *MultiLocalTrans) ListVnodes(host string) ([]*Vnode, error) {
 		return local.ListVnodes(host)
 	}
 	return ml.remote.ListVnodes(host)
+}
+
+func (ml *MultiLocalTrans) GetCoordinate(v *Vnode) (*coordinate.Coordinate, error) {
+	if local, ok := ml.hosts[v.Host]; ok {
+		return local.GetCoordinate(v)
+	}
+	return ml.remote.GetCoordinate(v)
 }
 
 // Ping a Vnode, check for liveness
@@ -280,5 +289,23 @@ func TestLookup(t *testing.T) {
 				t.Fatalf("results differ!")
 			}
 		}
+
+		// Coordinate
+		coord, err := r.LookupCoordinate(vn1[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if coord == nil {
+			t.Fatal("coord should not be nil")
+		}
+		coord, err = r2.LookupCoordinate(vn1[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if coord == nil {
+			t.Fatal("coord should not be nil")
+		}
+
 	}
+
 }
