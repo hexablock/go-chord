@@ -217,6 +217,11 @@ func (r *Ring) Shutdown() {
 	r.stopDelegate()
 }
 
+// Coordinate returns the coordinate for this node
+func (r *Ring) Coordinate() *coordinate.Coordinate {
+	return r.coordClient.GetCoordinate()
+}
+
 // LookupHash does a lookup for up to N successors of a hash.  It returns the
 // predecessor and up to N successors. The hash size must match the hash function
 // used when init'ing the ring.

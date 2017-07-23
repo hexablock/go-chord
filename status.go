@@ -15,6 +15,7 @@ type VnodeStatus struct {
 
 // Status represents the status of a node
 type Status struct {
+	Hostname      string
 	Coordinate    *coordinate.Coordinate
 	Vnodes        []*VnodeStatus
 	HashBits      int
@@ -25,8 +26,9 @@ type Status struct {
 // Status returns ring information of this node
 func (r *Ring) Status() *Status {
 	status := &Status{
+		Hostname:      r.config.Hostname,
 		HashBits:      r.config.hashBits,
-		Coordinate:    r.coordClient.GetCoordinate(),
+		Coordinate:    r.Coordinate(),
 		Vnodes:        make([]*VnodeStatus, len(r.vnodes)),
 		Meta:          r.config.Meta,
 		DelegateQueue: fmt.Sprintf("%d/%d", len(r.delegateCh), r.config.DelegateQueueSize),
