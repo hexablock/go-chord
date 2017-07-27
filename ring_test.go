@@ -6,6 +6,8 @@ import (
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/hexablock/go-chord/coordinate"
 )
 
 type MockDelegate struct {
@@ -32,6 +34,7 @@ func makeRing() *Ring {
 		hashBits:      160,
 		StabilizeMin:  time.Second,
 		StabilizeMax:  5 * time.Second,
+		Coordinate:    coordinate.DefaultConfig(),
 		Meta: Meta{
 			"meta1": []byte("value1"),
 			"meta2": []byte("value2"),

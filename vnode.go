@@ -143,6 +143,9 @@ CHECK_NEW_SUC:
 
 					// Advance the successors list past the dead one
 					vn.succLock.Lock()
+					//
+					// TODO: The copy operation is being picked up by the race detector
+					//
 					copy(vn.successors[0:], vn.successors[1:])
 					vn.successors[known-1-i] = nil
 					vn.succLock.Unlock()
@@ -164,6 +167,9 @@ CHECK_NEW_SUC:
 		if alive && err == nil {
 
 			vn.succLock.Lock()
+			//
+			// TODO: The copy operation is being picked up by the race detector
+			//
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybeSuc
 			vn.succLock.Unlock()
@@ -354,7 +360,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 		if err == nil {
 			return res, nil
 		}
-		log.Printf("[ERR] Failed to contact %s. Got %s", closest.StringID(), err)
+		log.Printf("[ERR] Failed to contact %s/%x. Got %s", closest.Host, closest.Id, err)
 	}
 
 	// Check if the ID is between us and any non-immediate successors

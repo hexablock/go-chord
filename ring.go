@@ -14,8 +14,8 @@ import (
 func initializeRing(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
-	// Initialize vivaldi coordinate client
-	coord, err := coordinate.NewClient(coordinate.DefaultConfig())
+	// Initialize vivaldi coordinate client using the config
+	coord, err := coordinate.NewClient(conf.Coordinate)
 	if err != nil {
 		return nil, err
 	}

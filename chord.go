@@ -65,16 +65,17 @@ type Delegate interface {
 
 // Config for Chord nodes
 type Config struct {
-	Hostname          string           // Local host name
-	Meta              Meta             // User defined metadata
-	NumVnodes         int              // Number of vnodes per physical node
-	HashFunc          func() hash.Hash `json:"-"` // Hash function to use
-	StabilizeMin      time.Duration    // Minimum stabilization time
-	StabilizeMax      time.Duration    // Maximum stabilization time
-	NumSuccessors     int              // Number of successors to maintain
-	Delegate          Delegate         `json:"-"` // Invoked to handle ring events
-	DelegateQueueSize int              // Number of delegate calls to hold in the queue
-	hashBits          int              // Bit size of the hash function
+	Hostname          string             // Local host name
+	Meta              Meta               // User defined metadata
+	NumVnodes         int                // Number of vnodes per physical node
+	HashFunc          func() hash.Hash   `json:"-"` // Hash function to use
+	StabilizeMin      time.Duration      // Minimum stabilization time
+	StabilizeMax      time.Duration      // Maximum stabilization time
+	NumSuccessors     int                // Number of successors to maintain
+	Coordinate        *coordinate.Config // vivaldi coordinate configuration
+	Delegate          Delegate           `json:"-"` // Invoked to handle ring events
+	DelegateQueueSize int                // Number of delegate calls to hold in the queue
+	hashBits          int                // Bit size of the hash function
 }
 
 // Represents a local Vnode
@@ -126,6 +127,7 @@ func DefaultConfig(hostname string) *Config {
 		StabilizeMin:      time.Duration(15 * time.Second),
 		StabilizeMax:      time.Duration(45 * time.Second),
 		NumSuccessors:     8,
+		Coordinate:        coordinate.DefaultConfig(),
 		Delegate:          nil,
 		DelegateQueueSize: 32,
 		hashBits:          160, // 160bit hash function for sha1

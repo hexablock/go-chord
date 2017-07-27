@@ -10,7 +10,7 @@ import (
 
 	"github.com/hexablock/go-chord/coordinate"
 
-	context "golang.org/x/net/context"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -354,7 +354,7 @@ func (cs *GRPCTransport) SkipSuccessor(target, self *Vnode) error {
 // Gets an outbound connection to a host
 func (cs *GRPCTransport) getConn(host string) (*rpcOutConn, error) {
 	if atomic.LoadInt32(&cs.shutdown) == 1 {
-		return nil, fmt.Errorf("TCP transport is shutdown")
+		return nil, fmt.Errorf("transport is shutdown")
 	}
 
 	// Check if we have a conn cached
@@ -557,9 +557,9 @@ func (cs *GRPCTransport) Shutdown() {
 	// TODO: remove this logic.  This should be handled by the entity that instantiated the grpc
 	// instance.
 	//
-
 	// Drain and stop grpc server
 	cs.server.GracefulStop()
+
 	// Close all the outbound
 	cs.poolLock.Lock()
 	for _, conns := range cs.pool {
