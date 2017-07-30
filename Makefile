@@ -5,7 +5,9 @@ clean:
 
 prep:
 	@which protoc || { echo "protoc: command not found!"; exit 1; }
-	@which glide || { echo "glide: command not found!"; exit 1; }
+
+deps:
+	go get -d -v ./...
 
 test:
 	go test -cover .
