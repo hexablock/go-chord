@@ -1,4 +1,4 @@
-# Go Chord [(https://travis-ci.org/hexablock/go-chord.svg?branch=master)](https://travis-ci.org/hexablock/go-chord)
+# Go Chord [![Build Status](https://travis-ci.org/hexablock/go-chord.svg?branch=master)](https://travis-ci.org/hexablock/go-chord)
 
 This package provides a Golang implementation of the Chord protocol.
 Chord is used to organize nodes along a ring in a consistent way. It can be
