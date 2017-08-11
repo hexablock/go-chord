@@ -58,9 +58,11 @@ func TestGRPCJoin(t *testing.T) {
 	r1.Shutdown()
 	r2.Shutdown()
 
+	// Stop accepting new connections letting current ones complete
 	s1.GracefulStop()
 	t1.Shutdown()
 
+	// Stop accepting new connections letting current ones complete
 	s2.GracefulStop()
 	t2.Shutdown()
 }
@@ -147,9 +149,11 @@ func TestGRPCCoordinate(t *testing.T) {
 	r1.Shutdown()
 	r2.Shutdown()
 
+	// Stop accepting new connections letting current ones complete
 	s1.GracefulStop()
 	t1.Shutdown()
 
+	// Stop accepting new connections letting current ones complete
 	s2.GracefulStop()
 	t2.Shutdown()
 }

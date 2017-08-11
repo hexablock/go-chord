@@ -12,12 +12,13 @@ A GRPCTransport implementation as been provided.
 ## Additions
 The following features have been added on top of the standard Chord protocol:
 
-- Vivaldi coordinate tracking to measure inter-vnode latency
-- Additional binary metadata field for each vnode to allow a user application to define
-custom properties
+- Vivaldi coordinate tracking to measure inter-vnode distance
+- An additional binary metadata field for each vnode to allow user definable custom properties
 
 ### Acknowledgements
-Code has been used from the following libraries:
+Most of the original code comes from the following libraries:
 
 - https://github.com/armon/go-chord
 - https://github.com/hashicorp/serf/coordinate
+
+Many thanks for the initial groundwork.
