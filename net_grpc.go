@@ -550,16 +550,9 @@ func (cs *GRPCTransport) GetCoordinateServe(ctx context.Context, vn *Vnode) (*Re
 	return resp, err
 }
 
-// Shutdown the TCP transport
+// Shutdown signals a shutdown on the transport, closing all outbound connections.
 func (cs *GRPCTransport) Shutdown() {
 	atomic.StoreInt32(&cs.shutdown, 1)
-
-	//
-	// TODO: remove this logic.  This should be handled by the entity that instantiated the grpc
-	// instance.
-	//
-	// Drain and stop grpc server
-	cs.server.GracefulStop()
 
 	// Close all the outbound
 	cs.poolLock.Lock()

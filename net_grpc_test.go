@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
+func prepRingGrpc(port int) (*Config, *grpc.Server, *GRPCTransport, error) {
 	listen := fmt.Sprintf("127.0.0.1:%d", port)
 	conf := DefaultConfig(listen)
 	conf.Delegate = &MockDelegate{}
@@ -20,18 +20,18 @@ func prepRingGrpc(port int) (*Config, *GRPCTransport, error) {
 
 	ln, err := net.Listen("tcp", listen)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	gserver := grpc.NewServer()
 	trans := NewGRPCTransport(gserver, timeout, connMaxIdle)
 	go gserver.Serve(ln)
 
-	return conf, trans, nil
+	return conf, gserver, trans, nil
 }
 
 func TestGRPCJoin(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRingGrpc(20025)
+	c1, s1, t1, err := prepRingGrpc(20025)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -42,7 +42,7 @@ func TestGRPCJoin(t *testing.T) {
 		t.Fatalf("unexpected err. %s", err)
 	}
 
-	c2, t2, err := prepRingGrpc(20026)
+	c2, s2, t2, err := prepRingGrpc(20026)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -57,17 +57,21 @@ func TestGRPCJoin(t *testing.T) {
 	// Shutdown
 	r1.Shutdown()
 	r2.Shutdown()
+
+	s1.GracefulStop()
 	t1.Shutdown()
+
+	s2.GracefulStop()
 	t2.Shutdown()
 }
 
 func TestGRPCLeave(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRingGrpc(20027)
+	c1, s1, t1, err := prepRingGrpc(20027)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRingGrpc(20028)
+	c2, _, t2, err := prepRingGrpc(20028)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -89,6 +93,8 @@ func TestGRPCLeave(t *testing.T) {
 
 	// Node 1 should leave
 	r1.Leave()
+
+	s1.GracefulStop()
 	t1.Shutdown()
 
 	// Wait for stabilization
@@ -105,11 +111,11 @@ func TestGRPCLeave(t *testing.T) {
 
 func TestGRPCCoordinate(t *testing.T) {
 	// Prepare to create 2 nodes
-	c1, t1, err := prepRingGrpc(20037)
+	c1, s1, t1, err := prepRingGrpc(20037)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
-	c2, t2, err := prepRingGrpc(20038)
+	c2, s2, t2, err := prepRingGrpc(20038)
 	if err != nil {
 		t.Fatalf("unexpected err. %s", err)
 	}
@@ -140,4 +146,10 @@ func TestGRPCCoordinate(t *testing.T) {
 
 	r1.Shutdown()
 	r2.Shutdown()
+
+	s1.GracefulStop()
+	t1.Shutdown()
+
+	s2.GracefulStop()
+	t2.Shutdown()
 }
