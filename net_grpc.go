@@ -27,11 +27,14 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	server   *grpc.Server
-	lock     sync.RWMutex
-	local    map[string]*localRPC
-	poolLock sync.Mutex
-	pool     map[string][]*rpcOutConn
+	server *grpc.Server
+
+	lock  sync.RWMutex
+	local map[string]*localRPC
+
+	poolLock sync.RWMutex
+	pool     map[string]*rpcOutConn
+
 	shutdown int32
 	timeout  time.Duration
 	maxIdle  time.Duration
@@ -42,8 +45,8 @@ type GRPCTransport struct {
 func NewGRPCTransport(gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
 		server:  gserver,
-		local:   map[string]*localRPC{},
-		pool:    map[string][]*rpcOutConn{},
+		local:   make(map[string]*localRPC),
+		pool:    make(map[string]*rpcOutConn),
 		timeout: rpcTimeout,
 		maxIdle: connMaxIdle,
 	}
@@ -358,29 +361,28 @@ func (cs *GRPCTransport) getConn(host string) (*rpcOutConn, error) {
 	}
 
 	// Check if we have a conn cached
-	var out *rpcOutConn
-	cs.poolLock.Lock()
-	list, ok := cs.pool[host]
-	if ok && len(list) > 0 {
-		out = list[len(list)-1]
-		list = list[:len(list)-1]
-		cs.pool[host] = list
+	cs.poolLock.RLock()
+	if out, ok := cs.pool[host]; ok && out != nil {
+		defer cs.poolLock.RUnlock()
+		return out, nil
 	}
-	cs.poolLock.Unlock()
+	cs.poolLock.RUnlock()
+
 	// Make a new connection
-	if out == nil {
-		conn, err := grpc.Dial(host, grpc.WithInsecure())
-		if err == nil {
-			return &rpcOutConn{
-				host:   host,
-				client: NewChordClient(conn),
-				conn:   conn,
-				used:   time.Now(),
-			}, nil
-		}
+	conn, err := grpc.Dial(host, grpc.WithInsecure())
+	if err != nil {
 		return nil, err
 	}
-	// return an existing connection
+
+	cs.poolLock.Lock()
+	out := &rpcOutConn{
+		host:   host,
+		client: NewChordClient(conn),
+		conn:   conn,
+		used:   time.Now(),
+	}
+	cs.poolLock.Unlock()
+
 	return out, nil
 }
 
@@ -395,8 +397,7 @@ func (cs *GRPCTransport) returnConn(o *rpcOutConn) {
 
 	// Push back into the pool
 	cs.poolLock.Lock()
-	list, _ := cs.pool[o.host]
-	cs.pool[o.host] = append(list, o)
+	cs.pool[o.host] = o
 	cs.poolLock.Unlock()
 }
 
@@ -562,10 +563,8 @@ func (cs *GRPCTransport) Shutdown() {
 
 	// Close all the outbound
 	cs.poolLock.Lock()
-	for _, conns := range cs.pool {
-		for _, out := range conns {
-			out.conn.Close()
-		}
+	for _, conn := range cs.pool {
+		conn.conn.Close()
 	}
 	cs.pool = nil
 	cs.poolLock.Unlock()
@@ -584,18 +583,11 @@ func (cs *GRPCTransport) reapOld() {
 
 func (cs *GRPCTransport) reapOnce() {
 	cs.poolLock.Lock()
-	defer cs.poolLock.Unlock()
-	for host, conns := range cs.pool {
-		max := len(conns)
-		for i := 0; i < max; i++ {
-			if time.Since(conns[i].used) > cs.maxIdle {
-				conns[i].conn.Close()
-				conns[i], conns[max-1] = conns[max-1], nil
-				max--
-				i--
-			}
+	for host, conn := range cs.pool {
+		if time.Since(conn.used) > cs.maxIdle {
+			conn.conn.Close()
+			delete(cs.pool, host)
 		}
-		// Trim any idle conns
-		cs.pool[host] = conns[:max]
 	}
+	cs.poolLock.Unlock()
 }
