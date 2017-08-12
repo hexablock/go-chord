@@ -1,6 +1,7 @@
 package chord
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -18,12 +19,46 @@ var (
 	errExhaustedAllPredNodes = errors.New("exhausted all preceeding nodes")
 )
 
+// SetMetadata sets the metadata map to a slice of byte slices per the protobuf
+func (vn *Vnode) SetMetadata(meta Meta) {
+	vn.Meta = make([][]byte, len(meta))
+	var i int
+	for k, v := range meta {
+		vn.Meta[i] = append(append([]byte(k), byte('=')), v...)
+		i++
+	}
+}
+
+// Metadata returns the metadata from a slice of byte slices to a map.
+func (vn *Vnode) Metadata() Meta {
+	meta := make(Meta)
+
+	for _, m := range vn.Meta {
+
+		arr := bytes.Split(m, []byte("="))
+		l := len(arr)
+
+		switch l {
+		case 0:
+		case 1:
+			meta[string(arr[0])] = []byte{}
+		case 2:
+			meta[string(arr[0])] = arr[1]
+		default:
+			meta[string(arr[0])] = bytes.Join(arr[1:], []byte("="))
+		}
+
+	}
+
+	return meta
+}
+
 // MarshalJSON is a custom JSON marshaller
-func (vn *Vnode) MarshalJSON() ([]byte, error) {
+func (vn Vnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"Id":   hex.EncodeToString(vn.Id),
 		"Host": vn.Host,
-		"Meta": string(vn.Meta),
+		"Meta": vn.Metadata(),
 	})
 }
 
@@ -40,7 +75,7 @@ func (vn *localVnode) init(idx int) {
 	// Set our host
 	vn.Host = vn.ring.config.Hostname
 	// Try to set binary metadata
-	vn.Meta, _ = vn.ring.config.Meta.MarshalBinary()
+	vn.SetMetadata(vn.ring.config.Meta)
 
 	// Initialize all state
 	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)

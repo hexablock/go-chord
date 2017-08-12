@@ -18,7 +18,7 @@ service chord {
 message Vnode {
     bytes id = 1;
     string host = 2;
-    bytes meta = 3;
+    repeated bytes meta = 3;
 }
 
 // Generic response fields are available based on the type of response
