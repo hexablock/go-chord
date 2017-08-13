@@ -40,6 +40,7 @@ func (meta Meta) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// MarshalJSON is used to marshal keys and values to a string map.
 func (meta Meta) MarshalJSON() ([]byte, error) {
 	m := make(map[string]string)
 	for k, v := range meta {

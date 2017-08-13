@@ -56,7 +56,7 @@ func (vn *Vnode) Metadata() Meta {
 // MarshalJSON is a custom JSON marshaller
 func (vn Vnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"Id":   hex.EncodeToString(vn.Id),
+		"ID":   hex.EncodeToString(vn.Id),
 		"Host": vn.Host,
 		"Meta": vn.Metadata(),
 	})
