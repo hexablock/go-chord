@@ -2,6 +2,7 @@ package chord
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 )
 
@@ -37,4 +38,13 @@ func (meta Meta) UnmarshalBinary(b []byte) error {
 		meta[string(arr[0])] = arr[1]
 	}
 	return nil
+}
+
+func (meta Meta) MarshalJSON() ([]byte, error) {
+	m := make(map[string]string)
+	for k, v := range meta {
+		m[k] = string(v)
+	}
+
+	return json.Marshal(m)
 }
