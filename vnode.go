@@ -100,7 +100,9 @@ func (vn *localVnode) genID(idx uint16) {
 // Schedules the Vnode to do regular maintenence
 func (vn *localVnode) schedule() {
 	// Setup our stabilize timer
+	vn.timeLock.Lock()
 	vn.timer = time.AfterFunc(randStabilize(vn.ring.config), vn.stabilize)
+	vn.timeLock.Unlock()
 }
 
 // Called to periodically stabilize the vnode
@@ -238,6 +240,10 @@ func (vn *localVnode) notifySuccessor() error {
 		return err
 	}
 
+	vn.succLock.Lock()
+	// The returned succList from the transport may be our local one so we establish a lock
+	// here
+
 	// Trim the successors list if too long
 	if len(succList) > maxSucc-1 {
 		succList = succList[:maxSucc-1]
@@ -250,10 +256,10 @@ func (vn *localVnode) notifySuccessor() error {
 			break
 		}
 
-		vn.succLock.Lock()
 		vn.successors[idx+1] = s
-		vn.succLock.Unlock()
 	}
+
+	vn.succLock.Unlock()
 
 	return nil
 }
@@ -302,14 +308,17 @@ func (vn *localVnode) fixFingerTable() error {
 
 	// Find the successor
 	nodes, err := vn.FindSuccessors(1, offset)
+
 	if nodes == nil || len(nodes) == 0 || err != nil {
 		return err
 	}
 
-	vn.succLock.RLock()
-	defer vn.succLock.RUnlock()
+	//vn.succLock.RLock()
+	//defer vn.succLock.RUnlock()
 
+	vn.succLock.RLock()
 	node := nodes[0]
+	vn.succLock.RUnlock()
 
 	// Update the finger table
 	vn.fingLock.Lock()
@@ -518,6 +527,9 @@ func (vn *localVnode) knownSuccessors() (successors int) {
 }
 
 func (vn *localVnode) Status() *VnodeStatus {
+	vn.timeLock.RLock()
+	defer vn.timeLock.RUnlock()
+
 	return &VnodeStatus{
 		Vnode:          vn.Vnode,
 		LastStabilized: vn.stabilized,

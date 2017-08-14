@@ -96,6 +96,7 @@ type localVnode struct {
 	predLock    sync.RWMutex
 	predecessor *Vnode
 
+	timeLock   sync.RWMutex
 	stabilized time.Time   // Last stabilized time
 	timer      *time.Timer // stabilization timer
 }

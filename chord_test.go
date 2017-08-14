@@ -2,6 +2,7 @@ package chord
 
 import (
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,7 +11,9 @@ import (
 
 type MultiLocalTrans struct {
 	remote Transport
-	hosts  map[string]*LocalTransport
+
+	mu    sync.RWMutex
+	hosts map[string]*LocalTransport
 }
 
 func InitMLTransport() *MultiLocalTrans {
@@ -22,68 +25,95 @@ func InitMLTransport() *MultiLocalTrans {
 }
 
 func (ml *MultiLocalTrans) ListVnodes(host string) ([]*Vnode, error) {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[host]; ok {
+		ml.mu.RUnlock()
 		return local.ListVnodes(host)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.ListVnodes(host)
 }
 
 func (ml *MultiLocalTrans) GetCoordinate(v *Vnode) (*coordinate.Coordinate, error) {
+
+	ml.mu.RLock()
 	if local, ok := ml.hosts[v.Host]; ok {
+		ml.mu.RUnlock()
 		return local.GetCoordinate(v)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.GetCoordinate(v)
 }
 
 // Ping a Vnode, check for liveness
 func (ml *MultiLocalTrans) Ping(self, v *Vnode) (bool, error) {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[v.Host]; ok {
+		ml.mu.RUnlock()
 		return local.Ping(self, v)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.Ping(self, v)
 }
 
 // Request a nodes predecessor
 func (ml *MultiLocalTrans) GetPredecessor(v *Vnode) (*Vnode, error) {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[v.Host]; ok {
+		ml.mu.RUnlock()
 		return local.GetPredecessor(v)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.GetPredecessor(v)
 }
 
 // Notify our successor of ourselves
 func (ml *MultiLocalTrans) Notify(target, self *Vnode) ([]*Vnode, error) {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[target.Host]; ok {
+		ml.mu.RUnlock()
 		return local.Notify(target, self)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.Notify(target, self)
 }
 
 // Find a successor
 func (ml *MultiLocalTrans) FindSuccessors(v *Vnode, n int, k []byte) ([]*Vnode, error) {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[v.Host]; ok {
+		ml.mu.RUnlock()
 		return local.FindSuccessors(v, n, k)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.FindSuccessors(v, n, k)
 }
 
 // Clears a predecessor if it matches a given vnode. Used to leave.
 func (ml *MultiLocalTrans) ClearPredecessor(target, self *Vnode) error {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[target.Host]; ok {
+		ml.mu.RUnlock()
 		return local.ClearPredecessor(target, self)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.ClearPredecessor(target, self)
 }
 
 // Instructs a node to skip a given successor. Used to leave.
 func (ml *MultiLocalTrans) SkipSuccessor(target, self *Vnode) error {
+	ml.mu.RLock()
 	if local, ok := ml.hosts[target.Host]; ok {
+		ml.mu.RUnlock()
 		return local.SkipSuccessor(target, self)
 	}
+	ml.mu.RUnlock()
 	return ml.remote.SkipSuccessor(target, self)
 }
 
 func (ml *MultiLocalTrans) Register(v *Vnode, o VnodeRPC) {
+	ml.mu.Lock()
+	defer ml.mu.Unlock()
 	local, ok := ml.hosts[v.Host]
 	if !ok {
 		local = InitLocalTransport(nil).(*LocalTransport)
@@ -93,7 +123,9 @@ func (ml *MultiLocalTrans) Register(v *Vnode, o VnodeRPC) {
 }
 
 func (ml *MultiLocalTrans) Deregister(host string) {
+	ml.mu.Lock()
 	delete(ml.hosts, host)
+	ml.mu.Unlock()
 }
 
 func TestDefaultConfig(t *testing.T) {
