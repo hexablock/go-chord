@@ -121,9 +121,6 @@ func (vn *localVnode) stabilize() {
 		return
 	}
 
-	// Setup the next stabilize timer
-	//defer vn.schedule()
-
 	// Check for new successor
 	if err := vn.checkNewSuccessor(); err != nil {
 		log.Printf("[ERR] Error checking for new successor: %s", err)
@@ -135,13 +132,18 @@ func (vn *localVnode) stabilize() {
 	}
 
 	// Finger table fix up
-	if err := vn.fixFingerTable(); err != nil {
-		log.Printf("[ERR] Error fixing finger table: %s", err)
-	}
+	// if err := vn.fixFingerTable(); err != nil {
+	// 	log.Printf("[ERR] Error fixing finger table: %s", err)
+	// }
 
 	// Check the predecessor
 	if err := vn.checkPredecessor(); err != nil {
 		log.Printf("[ERR] Error checking predecessor: %s", err)
+	}
+
+	// Fix finger table after fixing nodes immediate successor and predecessor
+	if err := vn.fixFingerTable(); err != nil {
+		log.Printf("[ERR] Error fixing finger table: %s", err)
 	}
 
 	// Set the last stabilized time
@@ -172,6 +174,9 @@ CHECK_NEW_SUC:
 
 		if known > 1 {
 			for i := 0; i < known; i++ {
+				//
+				// TODO: May need a lock on vn.successors
+				//
 				if alive, _ := trans.Ping(&vn.Vnode, vn.successors[0]); !alive {
 					// Don't eliminate the last successor we know of
 					if i+1 == known {
@@ -240,9 +245,9 @@ func (vn *localVnode) notifySuccessor() error {
 		return err
 	}
 
-	vn.succLock.Lock()
 	// The returned succList from the transport may be our local one so we establish a lock
-	// here
+	// here.
+	vn.succLock.Lock()
 
 	// Trim the successors list if too long
 	if len(succList) > maxSucc-1 {

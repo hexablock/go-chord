@@ -189,7 +189,8 @@ func Join(conf *Config, trans Transport, existing string) (*Ring, error) {
 	if ring.config.Delegate != nil {
 		go ring.delegateHandler()
 	}
-	// Do a fast stabilization, will schedule regular execution
+
+	// Do a fast stabilization, and schedule regular execution
 	for _, vn := range ring.vnodes {
 		vn.stabilize()
 	}
@@ -238,7 +239,8 @@ func (r *Ring) LookupHash(n int, hash []byte) ([]*Vnode, error) {
 	}
 
 	// Ensure hash size matches what is configured
-	if len(hash) != r.config.HashFunc().Size() {
+	l, cl := len(hash), r.config.HashFunc().Size()
+	if l != cl {
 		return nil, fmt.Errorf("invalid hash size")
 	}
 

@@ -15,6 +15,10 @@ The following features have been added on top of the standard Chord protocol:
 - Vivaldi coordinate tracking to measure inter-vnode distance
 - An additional binary metadata field for each vnode to allow user definable custom properties
 
+## Roadmap
+
+- Faster convergence times
+
 ### Acknowledgements
 Most of the original code comes from the following libraries:
 
