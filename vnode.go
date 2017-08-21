@@ -147,10 +147,17 @@ func (vn *localVnode) stabilize() {
 	}
 
 	// Set the last stabilized time
-	vn.stabilized = time.Now()
+	vn.setLastStabilized()
 
 	// Setup the next stabilize timer
 	vn.schedule()
+}
+
+// set the last stabilized time safely
+func (vn *localVnode) setLastStabilized() {
+	vn.timeLock.Lock()
+	vn.stabilized = time.Now()
+	vn.timeLock.Unlock()
 }
 
 // Checks for a new successor
