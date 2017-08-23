@@ -131,11 +131,6 @@ func (vn *localVnode) stabilize() {
 		log.Printf("[ERR] Error notifying successor: %s", err)
 	}
 
-	// Finger table fix up
-	// if err := vn.fixFingerTable(); err != nil {
-	// 	log.Printf("[ERR] Error fixing finger table: %s", err)
-	// }
-
 	// Check the predecessor
 	if err := vn.checkPredecessor(); err != nil {
 		log.Printf("[ERR] Error checking predecessor: %s", err)
@@ -214,11 +209,10 @@ CHECK_NEW_SUC:
 		// Check if new successor is alive before switching
 		alive, err := trans.Ping(&vn.Vnode, maybeSuc)
 		if alive && err == nil {
-
-			vn.succLock.Lock()
 			//
 			// TODO: The copy operation is being picked up by the race detector
 			//
+			vn.succLock.Lock()
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybeSuc
 			vn.succLock.Unlock()
