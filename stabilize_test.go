@@ -12,7 +12,7 @@ func TestAdaptiveStabilize(t *testing.T) {
 	if stab.min != (2 * time.Second) {
 		t.Fatal("wrong stab min", stab.min)
 	}
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 21; i++ {
 		stab.rand()
 	}
 	if stab.min != (3 * time.Second) {
