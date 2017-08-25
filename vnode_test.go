@@ -13,13 +13,19 @@ func makeVnode() *localVnode {
 	min := time.Duration(10 * time.Second)
 	max := time.Duration(30 * time.Second)
 	conf := &Config{
-		NumSuccessors: 8,
-		StabilizeMin:  min,
-		StabilizeMax:  max,
-		HashFunc:      sha1.New,
+		NumSuccessors:      8,
+		StabilizeMin:       min,
+		StabilizeMax:       max,
+		StabilizeThresh:    0,
+		StabilizeStayCount: 20,
+		HashFunc:           sha1.New,
 	}
 	trans := InitLocalTransport(nil)
-	ring := &Ring{config: conf, transport: trans}
+	ring := &Ring{
+		config:    conf,
+		transport: trans,
+		stab:      newAdaptiveStabilize(min, max, conf.StabilizeThresh, conf.StabilizeStayCount),
+	}
 	return &localVnode{ring: ring}
 }
 

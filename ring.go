@@ -19,8 +19,14 @@ func initializeRing(conf *Config, trans Transport) (*Ring, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Init stabilizer
+	stab := newAdaptiveStabilize(conf.StabilizeMin, conf.StabilizeMax, conf.StabilizeThresh,
+		conf.StabilizeStayCount)
 	// Initialize a ring
-	ring := &Ring{coordClient: coord}
+	ring := &Ring{
+		coordClient: coord,
+		stab:        stab,
+	}
 	ring.init(conf, trans)
 
 	return ring, nil

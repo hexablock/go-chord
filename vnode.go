@@ -101,7 +101,8 @@ func (vn *localVnode) genID(idx uint16) {
 func (vn *localVnode) schedule() {
 	// Setup our stabilize timer
 	vn.timeLock.Lock()
-	vn.timer = time.AfterFunc(randStabilize(vn.ring.config), vn.stabilize)
+	//vn.timer = time.AfterFunc(randStabilize(vn.ring.config), vn.stabilize)
+	vn.timer = time.AfterFunc(vn.ring.stab.rand(), vn.stabilize)
 	vn.timeLock.Unlock()
 }
 
@@ -289,6 +290,8 @@ func (vn *localVnode) Notify(maybePred *Vnode) ([]*Vnode, error) {
 		vn.predLock.Lock()
 		vn.predecessor = maybePred
 		vn.predLock.Unlock()
+		// Reset stablize to init to gently backoff
+		vn.ring.stab.reset()
 
 	} else {
 		vn.predLock.RUnlock()
@@ -482,7 +485,6 @@ func (vn *localVnode) ClearPredecessor(p *Vnode) error {
 		vn.predLock.Lock()
 		vn.predecessor = nil
 		vn.predLock.Unlock()
-
 	} else {
 		vn.predLock.RUnlock()
 	}
@@ -516,7 +518,6 @@ func (vn *localVnode) SkipSuccessor(s *Vnode) error {
 	copy(vn.successors[0:], vn.successors[1:])
 	vn.successors[known-1] = nil
 	vn.succLock.Unlock()
-
 	return nil
 }
 

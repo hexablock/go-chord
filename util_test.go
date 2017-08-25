@@ -3,42 +3,41 @@ package chord
 import (
 	"errors"
 	"testing"
-	"time"
 )
 
-func TestRandStabilize(t *testing.T) {
-	min := time.Duration(10 * time.Second)
-	max := time.Duration(30 * time.Second)
-	conf := &Config{
-		StabilizeMin: min,
-		StabilizeMax: max,
-	}
-
-	var times []time.Duration
-	for i := 0; i < 1000; i++ {
-		after := randStabilize(conf)
-		times = append(times, after)
-		if after < min {
-			t.Fatalf("after below min")
-		}
-		if after > max {
-			t.Fatalf("after above max")
-		}
-	}
-
-	collisions := 0
-	for idx, val := range times {
-		for i := 0; i < len(times); i++ {
-			if idx != i && times[i] == val {
-				collisions++
-			}
-		}
-	}
-
-	if collisions > 3 {
-		t.Fatalf("too many collisions! %d", collisions)
-	}
-}
+// func TestRandStabilize(t *testing.T) {
+// 	min := time.Duration(10 * time.Second)
+// 	max := time.Duration(30 * time.Second)
+// 	conf := &Config{
+// 		StabilizeMin: min,
+// 		StabilizeMax: max,
+// 	}
+//
+// 	var times []time.Duration
+// 	for i := 0; i < 1000; i++ {
+// 		after := randStabilize(conf)
+// 		times = append(times, after)
+// 		if after < min {
+// 			t.Fatalf("after below min")
+// 		}
+// 		if after > max {
+// 			t.Fatalf("after above max")
+// 		}
+// 	}
+//
+// 	collisions := 0
+// 	for idx, val := range times {
+// 		for i := 0; i < len(times); i++ {
+// 			if idx != i && times[i] == val {
+// 				collisions++
+// 			}
+// 		}
+// 	}
+//
+// 	if collisions > 3 {
+// 		t.Fatalf("too many collisions! %d", collisions)
+// 	}
+// }
 
 func TestBetween(t *testing.T) {
 	t1 := []byte{0, 0, 0, 0}

@@ -65,17 +65,21 @@ type Delegate interface {
 
 // Config for Chord nodes
 type Config struct {
-	Hostname          string             // Local host name
-	Meta              Meta               // User defined metadata
-	NumVnodes         int                // Number of vnodes per physical node
-	HashFunc          func() hash.Hash   `json:"-"` // Hash function to use
-	StabilizeMin      time.Duration      // Minimum stabilization time
-	StabilizeMax      time.Duration      // Maximum stabilization time
-	NumSuccessors     int                // Number of successors to maintain
-	Coordinate        *coordinate.Config // vivaldi coordinate configuration
-	Delegate          Delegate           `json:"-"` // Invoked to handle ring events
-	DelegateQueueSize int                // Number of delegate calls to hold in the queue
-	hashBits          int                // Bit size of the hash function
+	Hostname     string           // Local host name
+	Meta         Meta             // User defined metadata
+	NumVnodes    int              // Number of vnodes per physical node
+	HashFunc     func() hash.Hash `json:"-"` // Hash function to use
+	StabilizeMin time.Duration    // Minimum stabilization time
+	StabilizeMax time.Duration    // Maximum stabilization time
+	// Stabilize threshold.  Setting this to anything greater than 0 enables adaptive
+	// stabilization. If eneabled the above min and max are used as starting values.
+	StabilizeThresh    time.Duration
+	StabilizeStayCount int                // number of interations to stay at start before stepping
+	NumSuccessors      int                // Number of successors to maintain
+	Coordinate         *coordinate.Config // vivaldi coordinate configuration
+	Delegate           Delegate           `json:"-"` // Invoked to handle ring events
+	DelegateQueueSize  int                // Number of delegate calls to hold in the queue
+	hashBits           int                // Bit size of the hash function
 }
 
 // Represents a local Vnode
@@ -108,6 +112,7 @@ type Ring struct {
 	vnodes      []*localVnode
 	delegateCh  chan func()        // channel for delegate callbacks
 	coordClient *coordinate.Client // vivaldi coordinate client
+	stab        *adaptiveStabilize // adaptive stabilizer
 	shutdown    chan bool          // channel to wait for vnodes to shutdown
 	sigshut     int32              // signal shutdown
 }
@@ -121,17 +126,19 @@ func (config *Config) HashBits() int {
 // default hash function
 func DefaultConfig(hostname string) *Config {
 	return &Config{
-		Hostname:          hostname,
-		Meta:              make(Meta),
-		NumVnodes:         8,
-		HashFunc:          sha1.New,
-		StabilizeMin:      time.Duration(15 * time.Second),
-		StabilizeMax:      time.Duration(45 * time.Second),
-		NumSuccessors:     8,
-		Coordinate:        coordinate.DefaultConfig(),
-		Delegate:          nil,
-		DelegateQueueSize: 32,
-		hashBits:          160, // 160bit hash function for sha1
+		Hostname:           hostname,
+		Meta:               make(Meta),
+		NumVnodes:          8,
+		HashFunc:           sha1.New,
+		StabilizeMin:       time.Duration(15 * time.Second),
+		StabilizeMax:       time.Duration(45 * time.Second),
+		StabilizeThresh:    0,
+		StabilizeStayCount: 20,
+		NumSuccessors:      8,
+		Coordinate:         coordinate.DefaultConfig(),
+		Delegate:           nil,
+		DelegateQueueSize:  32,
+		hashBits:           160, // 160bit hash function for sha1
 	}
 }
 

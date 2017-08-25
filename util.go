@@ -4,17 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
-	"math/rand"
-	"time"
 )
 
 // Generates a random stabilization time
-func randStabilize(conf *Config) time.Duration {
-	min := conf.StabilizeMin
-	max := conf.StabilizeMax
-	r := rand.Float64()
-	return time.Duration((r * float64(max-min)) + float64(min))
-}
+// func randStabilize(conf *Config) time.Duration {
+// 	min := conf.StabilizeMin
+// 	max := conf.StabilizeMax
+// 	r := rand.Float64()
+// 	return time.Duration((r * float64(max-min)) + float64(min))
+// }
 
 // Checks if a key is STRICTLY between two ID's exclusively
 func between(id1, id2, key []byte) bool {
