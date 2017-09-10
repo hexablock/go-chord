@@ -27,7 +27,7 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	server *grpc.Server
+	//server *grpc.Server
 
 	lock  sync.RWMutex
 	local map[string]*localRPC
@@ -42,20 +42,27 @@ type GRPCTransport struct {
 
 // NewGRPCTransport creates a new grpc transport using the provided listener
 // and grpc server.
-func NewGRPCTransport(gserver *grpc.Server, rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
+func NewGRPCTransport(rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
-		server:  gserver,
+		//server:  gserver,
 		local:   make(map[string]*localRPC),
 		pool:    make(map[string]*rpcOutConn),
 		timeout: rpcTimeout,
 		maxIdle: connMaxIdle,
 	}
 
-	RegisterChordServer(gt.server, gt)
+	//RegisterChordServer(gt.server, gt)
 
-	go gt.reapOld()
+	//go gt.reapOld()
 
 	return gt
+}
+
+// RegisterServer registers the transport with the grpc server and starts the connection
+// reaper
+func (cs *GRPCTransport) RegisterServer(server *grpc.Server) {
+	RegisterChordServer(server, cs)
+	go cs.reapOld()
 }
 
 // Register vnode rpc's for a vnode.
