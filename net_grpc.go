@@ -27,8 +27,6 @@ type rpcOutConn struct {
 
 // GRPCTransport used by chord
 type GRPCTransport struct {
-	//server *grpc.Server
-
 	lock  sync.RWMutex
 	local map[string]*localRPC
 
@@ -44,17 +42,11 @@ type GRPCTransport struct {
 // and grpc server.
 func NewGRPCTransport(rpcTimeout, connMaxIdle time.Duration) *GRPCTransport {
 	gt := &GRPCTransport{
-		//server:  gserver,
 		local:   make(map[string]*localRPC),
 		pool:    make(map[string]*rpcOutConn),
 		timeout: rpcTimeout,
 		maxIdle: connMaxIdle,
 	}
-
-	//RegisterChordServer(gt.server, gt)
-
-	//go gt.reapOld()
-
 	return gt
 }
 
