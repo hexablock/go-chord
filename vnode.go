@@ -452,8 +452,8 @@ func (vn *localVnode) leave() error {
 	vn.succLock.RLock()
 	defer vn.succLock.RUnlock()
 
-	vn.predLock.RLock()
-	defer vn.predLock.RUnlock()
+	//vn.predLock.RLock()
+	//defer vn.predLock.RUnlock()
 
 	// Inform the delegate we are leaving
 	pred := vn.predecessor
