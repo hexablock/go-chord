@@ -551,10 +551,14 @@ func (vn *localVnode) Status() *VnodeStatus {
 
 // UpdateCoordinate updates the local coordinate state with the remote vnode and coordinate provided.
 // It returns the new local coordinates.  It currently tracks by hostname.
-func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
-	name := remote.Host
+func (vn *localVnode) UpdateCoordinate(remote *Vnode, rtt time.Duration) (*coordinate.Coordinate, error) {
 	// Update the coordates based on the remote vnode
-	return vn.ring.coordClient.Update(name, coord, rtt)
+	coord, err := vn.ring.coordClient.Update(remote.Host, remote.Coordinate, rtt)
+	if err == nil {
+		vn.Coordinate = coord
+	}
+
+	return coord, err
 }
 
 // GetCoordinate returns the vivaldi coordinates for this Vnode.  All vnodes on given node will have

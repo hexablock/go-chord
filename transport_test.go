@@ -22,7 +22,7 @@ type MockVnodeRPC struct {
 func (mv *MockVnodeRPC) GetCoordinate() *coordinate.Coordinate {
 	return nil
 }
-func (mv *MockVnodeRPC) UpdateCoordinate(*Vnode, *coordinate.Coordinate, time.Duration) (*coordinate.Coordinate, error) {
+func (mv *MockVnodeRPC) UpdateCoordinate(*Vnode, time.Duration) (*coordinate.Coordinate, error) {
 	return nil, nil
 }
 
@@ -169,7 +169,7 @@ func TestLocalNotify(t *testing.T) {
 
 func TestLocalFindSucc(t *testing.T) {
 	l := makeLocal()
-	suc := []*Vnode{&Vnode{Id: []byte{40}}}
+	suc := []*Vnode{{Id: []byte{40}}}
 
 	mockVN := &MockVnodeRPC{succ: suc, err: nil}
 	vn := &Vnode{Id: []byte{12}}
@@ -218,7 +218,7 @@ func TestLocalClearPred(t *testing.T) {
 
 func TestLocalSkipSucc(t *testing.T) {
 	l := makeLocal()
-	suc := []*Vnode{&Vnode{Id: []byte{40}}}
+	suc := []*Vnode{{Id: []byte{40}}}
 	mockVN := &MockVnodeRPC{succ: suc}
 	vn := &Vnode{Id: []byte{12}}
 	l.Register(vn, mockVN)

@@ -51,7 +51,7 @@ type VnodeRPC interface {
 	ClearPredecessor(*Vnode) error
 	SkipSuccessor(*Vnode) error
 	GetCoordinate() *coordinate.Coordinate
-	UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error)
+	UpdateCoordinate(remote *Vnode, rtt time.Duration) (*coordinate.Coordinate, error)
 }
 
 // Delegate to notify on ring events

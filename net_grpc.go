@@ -130,7 +130,7 @@ func (cs *GRPCTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error
 	case err := <-errChan:
 		return nil, err
 	case resp := <-respChan:
-		return resp.Coordinate, nil
+		return resp.Vnode.Coordinate, nil
 	}
 
 }
@@ -174,12 +174,13 @@ func (cs *GRPCTransport) Ping(self, target *Vnode) (bool, error) {
 		rtt := time.Since(start)
 		// Get local vnode to be used to update the coordinate
 		obj, _ := cs.get(self)
-		// Update coordinate using the local vnode
-		if _, err := obj.UpdateCoordinate(target, resp.Coordinate, rtt); err != nil {
+		// Update local vnode coordinate with the target coordinates
+		if _, err := obj.UpdateCoordinate(resp.Vnode, rtt); err != nil {
 			log.Printf("[ERROR] Failed to update coordinates for %s: %v", target.Host, err)
 		}
 
-		return resp.Ok, nil
+		//return resp.Ok, nil
+		return true, nil
 	}
 }
 
@@ -433,9 +434,9 @@ func (cs *GRPCTransport) PingServe(ctx context.Context, in *VnodePair) (*Respons
 	target := in.Target
 	obj, ok := cs.get(target)
 	if ok {
-		// TODO: update coords for
-		// coord,err:=obj.UpdateCoordinate(in.Self)
-		return &Response{Coordinate: obj.GetCoordinate(), Ok: ok}, nil
+		// Respond with local vnode with coords attached
+		target.Coordinate = obj.GetCoordinate()
+		return &Response{Vnode: target}, nil
 	}
 	return &Response{}, fmt.Errorf("target vnode not found: %s/%x", target.Host, target.Id)
 }
@@ -539,11 +540,12 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 func (cs *GRPCTransport) GetCoordinateServe(ctx context.Context, vn *Vnode) (*Response, error) {
 	var (
 		obj, ok = cs.get(vn)
-		resp    = &Response{}
+		resp    = &Response{Vnode: vn}
 		err     error
 	)
 	if ok {
-		resp.Coordinate = obj.GetCoordinate()
+		resp.Vnode.Coordinate = obj.GetCoordinate()
+		//resp.Coordinate = obj.GetCoordinate()
 	} else {
 		err = fmt.Errorf("target vnode not found: %s/%x", vn.Host, vn.Id)
 	}
