@@ -54,15 +54,17 @@ func (vn *Vnode) Metadata() Meta {
 }
 
 // MarshalJSON is a custom JSON marshaller
-func (vn Vnode) MarshalJSON() ([]byte, error) {
+func (vn *Vnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		ID   string
-		Host string
-		Meta Meta
+		ID         string
+		Host       string
+		Meta       Meta
+		Coordinate *coordinate.Coordinate
 	}{
-		ID:   hex.EncodeToString(vn.Id),
-		Host: vn.Host,
-		Meta: vn.Metadata(),
+		ID:         hex.EncodeToString(vn.Id),
+		Host:       vn.Host,
+		Meta:       vn.Metadata(),
+		Coordinate: vn.GetCoordinate(),
 	})
 }
 
@@ -547,10 +549,9 @@ func (vn *localVnode) Status() *VnodeStatus {
 	}
 }
 
-// UpdateCoordinate updates the local coordinate state with the remote coordinate provided.  It
-// currently tracks by hostname.
+// UpdateCoordinate updates the local coordinate state with the remote vnode and coordinate provided.
+// It returns the new local coordinates.  It currently tracks by hostname.
 func (vn *localVnode) UpdateCoordinate(remote *Vnode, coord *coordinate.Coordinate, rtt time.Duration) (*coordinate.Coordinate, error) {
-	// QUESTION: Does this need to be tracked by vnode id rather than host?
 	name := remote.Host
 	// Update the coordates based on the remote vnode
 	return vn.ring.coordClient.Update(name, coord, rtt)

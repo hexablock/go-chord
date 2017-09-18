@@ -19,6 +19,7 @@ message Vnode {
     bytes id = 1;
     string host = 2;
     repeated bytes meta = 3;
+    coordinate.Coordinate Coordinate = 4;
 }
 
 // Generic response fields are available based on the type of response

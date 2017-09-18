@@ -433,6 +433,8 @@ func (cs *GRPCTransport) PingServe(ctx context.Context, in *VnodePair) (*Respons
 	target := in.Target
 	obj, ok := cs.get(target)
 	if ok {
+		// TODO: update coords for
+		// coord,err:=obj.UpdateCoordinate(in.Self)
 		return &Response{Coordinate: obj.GetCoordinate(), Ok: ok}, nil
 	}
 	return &Response{}, fmt.Errorf("target vnode not found: %s/%x", target.Host, target.Id)
