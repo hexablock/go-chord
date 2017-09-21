@@ -95,7 +95,7 @@ func TestLocalPing(t *testing.T) {
 	self := &Vnode{Id: []byte{66}, Host: "self"}
 	mockVN := &MockVnodeRPC{}
 	l.Register(vn, mockVN)
-	if res, err := l.Ping(self, vn); !res || err != nil {
+	if res, _, err := l.Ping(self, vn); !res || err != nil {
 		t.Fatalf("local ping failed")
 	}
 }
@@ -109,7 +109,7 @@ func TestLocalMissingPing(t *testing.T) {
 
 	// Print some random node
 	vn2 := &Vnode{Id: []byte{3}}
-	if res, _ := l.Ping(self, vn2); res {
+	if res, _, _ := l.Ping(self, vn2); res {
 		t.Fatalf("ping succeeded")
 	}
 }
@@ -245,11 +245,11 @@ func TestLocalDeregister(t *testing.T) {
 	self := &Vnode{Id: []byte{66}, Host: "self"}
 	mockVN := &MockVnodeRPC{}
 	l.Register(vn, mockVN)
-	if res, err := l.Ping(self, vn); !res || err != nil {
+	if res, _, err := l.Ping(self, vn); !res || err != nil {
 		t.Fatalf("local ping failed")
 	}
 	l.Deregister(vn)
-	if res, _ := l.Ping(self, vn); res {
+	if res, _, _ := l.Ping(self, vn); res {
 		t.Fatalf("local ping succeeded")
 	}
 }
@@ -266,7 +266,7 @@ func TestBHPing(t *testing.T) {
 	bh := BlackholeTransport{}
 	vn := &Vnode{Id: []byte{12}}
 	self := &Vnode{Id: []byte{66}, Host: "self"}
-	res, err := bh.Ping(self, vn)
+	res, _, err := bh.Ping(self, vn)
 	if res || err != nil {
 		t.Fatalf("expected fail")
 	}

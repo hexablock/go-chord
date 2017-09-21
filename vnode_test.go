@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/hexablock/go-chord/coordinate"
 )
 
 func makeVnode() *localVnode {
@@ -26,6 +28,7 @@ func makeVnode() *localVnode {
 		transport: trans,
 		stab:      newAdaptiveStabilize(min, max, conf.StabilizeThresh, conf.StabilizeStayCount),
 	}
+	ring.coordClient, _ = coordinate.NewClient(coordinate.DefaultConfig())
 	return &localVnode{ring: ring}
 }
 

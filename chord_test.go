@@ -46,7 +46,7 @@ func (ml *MultiLocalTrans) GetCoordinate(v *Vnode) (*coordinate.Coordinate, erro
 }
 
 // Ping a Vnode, check for liveness
-func (ml *MultiLocalTrans) Ping(self, v *Vnode) (bool, error) {
+func (ml *MultiLocalTrans) Ping(self, v *Vnode) (bool, *coordinate.Coordinate, error) {
 	ml.mu.RLock()
 	if local, ok := ml.hosts[v.Host]; ok {
 		ml.mu.RUnlock()

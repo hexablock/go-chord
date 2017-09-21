@@ -186,7 +186,8 @@ CHECK_NEW_SUC:
 				//
 				// TODO: May need a lock on vn.successors
 				//
-				if alive, _ := trans.Ping(&vn.Vnode, vn.successors[0]); !alive {
+				alive, coord, _ := trans.Ping(&vn.Vnode, vn.successors[0])
+				if !alive {
 					// Don't eliminate the last successor we know of
 					if i+1 == known {
 						return errAllKnownSuccDead
@@ -202,6 +203,9 @@ CHECK_NEW_SUC:
 					vn.succLock.Unlock()
 
 				} else {
+					vn.succLock.Lock()
+					vn.successors[0].Coordinate = coord
+					vn.succLock.Unlock()
 					// Found live successor, check for new one
 					goto CHECK_NEW_SUC
 				}
@@ -214,7 +218,7 @@ CHECK_NEW_SUC:
 	// Check if we should replace our successor
 	if maybeSuc != nil && between(vn.Id, succ.Id, maybeSuc.Id) {
 		// Check if new successor is alive before switching
-		alive, err := trans.Ping(&vn.Vnode, maybeSuc)
+		alive, coord, err := trans.Ping(&vn.Vnode, maybeSuc)
 		if alive && err == nil {
 			//
 			// TODO: The copy operation is being picked up by the race detector
@@ -222,6 +226,7 @@ CHECK_NEW_SUC:
 			vn.succLock.Lock()
 			copy(vn.successors[1:], vn.successors[0:len(vn.successors)-1])
 			vn.successors[0] = maybeSuc
+			vn.successors[0].Coordinate = coord
 			vn.succLock.Unlock()
 
 		} else {
@@ -373,18 +378,21 @@ func (vn *localVnode) checkPredecessor() error {
 	vn.predLock.RLock()
 	if vn.predecessor != nil {
 
-		res, err := vn.ring.transport.Ping(&vn.Vnode, vn.predecessor)
+		res, coord, err := vn.ring.transport.Ping(&vn.Vnode, vn.predecessor)
 		vn.predLock.RUnlock()
 		if err != nil {
 			return err
 		}
 
-		// Predecessor is dead
+		vn.predLock.Lock()
 		if !res {
-			vn.predLock.Lock()
+			// Predecessor is dead
 			vn.predecessor = nil
-			vn.predLock.Unlock()
+		} else {
+			// Update coordinates
+			vn.predecessor.Coordinate = coord
 		}
+		vn.predLock.Unlock()
 
 	} else {
 		vn.predLock.RUnlock()
@@ -476,10 +484,11 @@ func (vn *localVnode) leave() error {
 
 // Used to clear our predecessor when a node is leaving
 func (vn *localVnode) ClearPredecessor(p *Vnode) error {
+	// Inform the delegate
+	conf := vn.ring.config
+
 	vn.predLock.RLock()
 	if vn.predecessor != nil && vn.predecessor.StringID() == p.StringID() {
-		// Inform the delegate
-		conf := vn.ring.config
 		old := vn.predecessor
 
 		vn.predLock.RUnlock()

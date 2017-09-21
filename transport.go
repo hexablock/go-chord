@@ -80,12 +80,12 @@ func (lt *LocalTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, erro
 }
 
 // Ping pings a local or remote Vnode
-func (lt *LocalTransport) Ping(self, target *Vnode) (bool, error) {
+func (lt *LocalTransport) Ping(self, target *Vnode) (bool, *coordinate.Coordinate, error) {
 	// Look for it locally
-	_, ok := lt.get(target)
+	obj, ok := lt.get(target)
 	// If it exists locally, handle it
 	if ok {
-		return true, nil
+		return true, obj.GetCoordinate(), nil
 	}
 	// Pass onto remote
 	return lt.remote.Ping(self, target)
@@ -187,8 +187,8 @@ func (*BlackholeTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, err
 }
 
 // Ping is a no-op call
-func (*BlackholeTransport) Ping(self, target *Vnode) (bool, error) {
-	return false, nil
+func (*BlackholeTransport) Ping(self, target *Vnode) (bool, *coordinate.Coordinate, error) {
+	return false, nil, nil
 }
 
 // GetPredecessor is a no-op call

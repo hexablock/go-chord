@@ -21,8 +21,8 @@ type Transport interface {
 	// Get the coordinates for a vnode
 	GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error)
 
-	// Ping a Vnode, check for liveness
-	Ping(self, target *Vnode) (bool, error)
+	// Ping a Vnode, return liveness and/or coordinates
+	Ping(self, target *Vnode) (bool, *coordinate.Coordinate, error)
 
 	// Request a nodes predecessor
 	GetPredecessor(*Vnode) (*Vnode, error)
