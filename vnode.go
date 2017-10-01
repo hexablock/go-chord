@@ -143,7 +143,7 @@ func (vn *localVnode) stabilize() {
 		log.Printf("[ERR] Error checking predecessor: %s", err)
 	}
 
-	// Fix finger table after fixing nodes immediate successor and predecessor
+	// Fix finger table after fixing node's immediate successor and predecessor
 	if err := vn.fixFingerTable(); err != nil {
 		log.Printf("[ERR] Error fixing finger table: %s", err)
 	}
@@ -243,7 +243,7 @@ func (vn *localVnode) GetPredecessor() (*Vnode, error) {
 	return vn.predecessor, nil
 }
 
-// Notifies our successor of us, updates successor list
+// Notifies our successor of us and updates successor list
 func (vn *localVnode) notifySuccessor() error {
 	maxSucc := vn.ring.config.NumSuccessors
 
