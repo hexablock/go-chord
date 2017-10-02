@@ -10,7 +10,7 @@ deps:
 	go get -d -v ./...
 
 test:
-	go test -cover .
+	go test -cover ./...
 
 cov:
 	go test -coverprofile=/tmp/coverage.out
