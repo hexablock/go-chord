@@ -148,17 +148,20 @@ func (vn *localVnode) stabilize() {
 		log.Printf("[ERR] Error fixing finger table: %s", err)
 	}
 
-	// Set the last stabilized time
-	vn.setLastStabilized()
+	// Set the last stabilized time performing any other required ops
+	vn.setStabilized()
 
 	// Setup the next stabilize timer
 	vn.schedule()
 }
 
 // set the last stabilized time safely
-func (vn *localVnode) setLastStabilized() {
+func (vn *localVnode) setStabilized() {
+	// Set the vnode coordinate cache
+	coord := vn.GetCoordinate()
 	vn.timeLock.Lock()
 	vn.stabilized = time.Now()
+	vn.Coordinate = coord
 	vn.timeLock.Unlock()
 }
 
@@ -193,16 +196,17 @@ CHECK_NEW_SUC:
 						return errAllKnownSuccDead
 					}
 
-					// Advance the successors list past the dead one
-					vn.succLock.Lock()
 					//
 					// TODO: The copy operation is being picked up by the race detector
 					//
+					vn.succLock.Lock()
+					// Advance the successors list past the dead one
 					copy(vn.successors[0:], vn.successors[1:])
 					vn.successors[known-1-i] = nil
 					vn.succLock.Unlock()
 
 				} else {
+
 					vn.succLock.Lock()
 					vn.successors[0].Coordinate = coord
 					vn.succLock.Unlock()
@@ -443,6 +447,7 @@ func (vn *localVnode) FindSuccessors(n int, key []byte) ([]*Vnode, error) {
 			if len(remain) > n {
 				remain = remain[:n]
 			}
+
 			return remain, nil
 		}
 	}
@@ -563,10 +568,6 @@ func (vn *localVnode) Status() *VnodeStatus {
 func (vn *localVnode) UpdateCoordinate(remote *Vnode, rtt time.Duration) (*coordinate.Coordinate, error) {
 	// Update the coordates based on the remote vnode
 	coord, err := vn.ring.coordClient.Update(remote.Host, remote.Coordinate, rtt)
-	if err == nil {
-		vn.Coordinate = coord
-	}
-
 	return coord, err
 }
 

@@ -24,8 +24,6 @@ message Vnode {
 
 // Generic response fields are available based on the type of response
 message Response {
-    //coordinate.Coordinate Coordinate = 1;
-    //bool Ok = 2;
     Vnode Vnode = 1;
 }
 

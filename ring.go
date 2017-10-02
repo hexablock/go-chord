@@ -68,7 +68,7 @@ func (r *Ring) Swap(i, j int) {
 	r.vnodes[i], r.vnodes[j] = r.vnodes[j], r.vnodes[i]
 }
 
-// Returns the nearest local vnode to the key
+// nearestVnode returns the nearest local vnode to the key
 func (r *Ring) nearestVnode(key []byte) *localVnode {
 
 	for i := len(r.vnodes) - 1; i >= 0; i-- {
