@@ -14,14 +14,17 @@ import (
 func initializeRing(conf *Config, trans Transport) (*Ring, error) {
 	// Initialize the hash bits
 	conf.hashBits = conf.HashFunc().Size() * 8
+
 	// Initialize vivaldi coordinate client using the config
 	coord, err := coordinate.NewClient(conf.Coordinate)
 	if err != nil {
 		return nil, err
 	}
+
 	// Init stabilizer
-	stab := newAdaptiveStabilize(conf.StabilizeMin, conf.StabilizeMax, conf.StabilizeThresh,
-		conf.StabilizeStayCount)
+	stab := newAdaptiveStabilize(conf.StabilizeMin, conf.StabilizeMax,
+		conf.StabilizeThresh, conf.StabilizeStayCount)
+
 	// Initialize a ring
 	ring := &Ring{
 		coordClient: coord,
@@ -55,6 +58,11 @@ func (r *Ring) init(conf *Config, trans Transport) {
 // Len is the number of vnodes
 func (r *Ring) Len() int {
 	return len(r.vnodes)
+}
+
+// GetCoordinate returns the coorindates for this node on the ring
+func (r *Ring) GetCoordinate() *coordinate.Coordinate {
+	return r.coordClient.GetCoordinate()
 }
 
 // Less returns whether the vnode with index i should sort
