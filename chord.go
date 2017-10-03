@@ -65,21 +65,31 @@ type Delegate interface {
 
 // Config for Chord nodes
 type Config struct {
-	Hostname     string           // Local host name
-	Meta         Meta             // User defined metadata
-	NumVnodes    int              // Number of vnodes per physical node
-	HashFunc     func() hash.Hash `json:"-"` // Hash function to use
-	StabilizeMin time.Duration    // Minimum stabilization time
-	StabilizeMax time.Duration    // Maximum stabilization time
-	// Stabilize threshold.  Setting this to anything greater than 0 enables adaptive
-	// stabilization. If eneabled the above min and max are used as starting values.
-	StabilizeThresh    time.Duration
-	StabilizeStayCount int                // number of interations to stay at start before stepping
-	NumSuccessors      int                // Number of successors to maintain
-	Coordinate         *coordinate.Config // vivaldi coordinate configuration
-	Delegate           Delegate           `json:"-"` // Invoked to handle ring events
-	DelegateQueueSize  int                // Number of delegate calls to hold in the queue
-	hashBits           int                // Bit size of the hash function
+	Hostname string // Local host name
+
+	Region string // General region
+	Zone   string // Zone within a region
+	Sector string // Sector within a zone
+	Meta   Meta   // User defined metadata
+
+	NumVnodes     int // Number of vnodes per physical node
+	NumSuccessors int // Number of successors to maintain
+
+	HashFunc func() hash.Hash `json:"-"` // Hash function to use
+
+	StabilizeMin time.Duration // Minimum stabilization time
+	StabilizeMax time.Duration // Maximum stabilization time
+	// Setting this to anything greater than 0 enables adaptive stabilization.
+	// If eneabled the above min and max are used as starting values.
+	StabilizeThresh time.Duration
+	// Number of interations to stay at start before stepping
+	StabilizeStayCount int
+
+	Coordinate        *coordinate.Config // vivaldi coordinate configuration
+	Delegate          Delegate           `json:"-"` // Invoked to handle ring events
+	DelegateQueueSize int                // Number of delegate calls to hold in the queue
+
+	hashBits int // Bit size of the hash function used by finger table
 }
 
 // Represents a local Vnode
@@ -127,6 +137,9 @@ func (config *Config) HashBits() int {
 func DefaultConfig(hostname string) *Config {
 	return &Config{
 		Hostname:           hostname,
+		Region:             "region",
+		Zone:               "zone",
+		Sector:             "sector",
 		Meta:               make(Meta),
 		NumVnodes:          8,
 		HashFunc:           sha1.New,

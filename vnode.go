@@ -58,13 +58,19 @@ func (vn *Vnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		ID         string
 		Host       string
-		Meta       Meta
+		Region     string
+		Zone       string
+		Sector     string
 		Coordinate *coordinate.Coordinate
+		Meta       Meta
 	}{
 		ID:         hex.EncodeToString(vn.Id),
 		Host:       vn.Host,
-		Meta:       vn.Metadata(),
+		Region:     vn.Region,
+		Zone:       vn.Zone,
+		Sector:     vn.Sector,
 		Coordinate: vn.Coordinate,
+		Meta:       vn.Metadata(),
 	})
 }
 
@@ -78,14 +84,21 @@ func (vn *Vnode) StringID() string {
 func (vn *localVnode) init(idx int) {
 	// Generate an ID
 	vn.genID(uint16(idx))
-	// Set our host
-	vn.Host = vn.ring.config.Hostname
-	// Try to set binary metadata
-	vn.SetMetadata(vn.ring.config.Meta)
+
+	conf := vn.ring.config
+
+	// Set our node contstants
+	vn.Host = conf.Hostname
+	vn.Region = conf.Region
+	vn.Zone = conf.Zone
+	vn.Sector = conf.Sector
+
+	// Set binary metadata
+	vn.SetMetadata(conf.Meta)
 
 	// Initialize all state
-	vn.successors = make([]*Vnode, vn.ring.config.NumSuccessors)
-	vn.finger = make([]*Vnode, vn.ring.config.hashBits)
+	vn.successors = make([]*Vnode, conf.NumSuccessors)
+	vn.finger = make([]*Vnode, conf.hashBits)
 
 	// Register with the RPC mechanism
 	vn.ring.transport.Register(&vn.Vnode, vn)

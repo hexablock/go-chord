@@ -18,11 +18,15 @@ service chord {
 message Vnode {
     bytes id = 1;
     string host = 2;
-    repeated bytes meta = 3;
-    coordinate.Coordinate Coordinate = 4;
+    string region = 3;
+    string zone = 4;
+    string sector = 5;
+    repeated bytes meta = 6;
+    coordinate.Coordinate Coordinate = 7;
 }
 
-// Generic response fields are available based on the type of response
+// Generic response fields.  This is need as we cannot send nil
+// responses over grpc
 message Response {
     Vnode Vnode = 1;
 }
