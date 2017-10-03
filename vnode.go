@@ -523,8 +523,8 @@ func (vn localVnode) Status() *VnodeStatus {
 	//defer vn.timeLock.RUnlock()
 
 	return &VnodeStatus{
-		Vnode:          vn.Vnode,
-		LastStabilized: vn.stabilized,
+		ID:         hex.EncodeToString(vn.Id),
+		Stabilized: vn.stabilized,
 	}
 }
 

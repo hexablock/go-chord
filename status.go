@@ -8,17 +8,17 @@ import (
 
 // VnodeStatus holds the status for a single Vnode
 type VnodeStatus struct {
-	Vnode          Vnode
-	LastStabilized time.Time
+	ID         string
+	Stabilized time.Time
 }
 
 // Status represents the status of a node
 type Status struct {
 	Hostname   string
-	Coordinate *coordinate.Coordinate
-	Vnodes     []*VnodeStatus
 	HashBits   int
 	Meta       Meta
+	Coordinate *coordinate.Coordinate
+	Vnodes     []*VnodeStatus
 }
 
 // Status returns ring information of this node
