@@ -108,7 +108,7 @@ func (cs *GRPCTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error
 		return nil, err
 	}
 
-	respChan := make(chan *Response, 1)
+	respChan := make(chan *Vnode, 1)
 	errChan := make(chan error, 1)
 
 	go func(vnode *Vnode) {
@@ -130,7 +130,7 @@ func (cs *GRPCTransport) GetCoordinate(vn *Vnode) (*coordinate.Coordinate, error
 	case err := <-errChan:
 		return nil, err
 	case resp := <-respChan:
-		return resp.Vnode.Coordinate, nil
+		return resp.Coordinate, nil
 	}
 
 }
@@ -540,19 +540,19 @@ func (cs *GRPCTransport) SkipSuccessorServe(ctx context.Context, in *VnodePair) 
 }
 
 // GetCoordinateServe serves a GetCoordinate request returning the Coordinate for this node
-func (cs *GRPCTransport) GetCoordinateServe(ctx context.Context, vn *Vnode) (*Response, error) {
+func (cs *GRPCTransport) GetCoordinateServe(ctx context.Context, vn *Vnode) (*Vnode, error) {
 	var (
 		obj, ok = cs.get(vn)
-		resp    = &Response{Vnode: vn}
+		resp    = *vn
 		err     error
 	)
 	if ok {
-		resp.Vnode.Coordinate = obj.GetCoordinate()
+		resp.Coordinate = obj.GetCoordinate()
 	} else {
 		err = fmt.Errorf("target vnode not found: %s/%x", vn.Host, vn.Id)
 	}
 
-	return resp, err
+	return &resp, err
 }
 
 // Shutdown signals a shutdown on the transport, closing all outbound connections.

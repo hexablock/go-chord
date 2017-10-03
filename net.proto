@@ -12,7 +12,7 @@ service chord {
     rpc FindSuccessorsServe(FindSuccReq) returns (VnodeList) {}
     rpc ClearPredecessorServe(VnodePair) returns (Response) {}
     rpc SkipSuccessorServe(VnodePair) returns (Response) {}
-    rpc GetCoordinateServe(Vnode) returns (Response) {}
+    rpc GetCoordinateServe(Vnode) returns (Vnode) {}
 }
 
 message Vnode {
