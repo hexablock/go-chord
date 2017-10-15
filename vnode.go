@@ -531,7 +531,7 @@ func (vn *localVnode) knownSuccessors() (successors int) {
 	return
 }
 
-func (vn localVnode) Status() *VnodeStatus {
+func (vn *localVnode) Status() *VnodeStatus {
 	//vn.timeLock.RLock()
 	//defer vn.timeLock.RUnlock()
 
@@ -561,6 +561,7 @@ func (vn *localVnode) UpdateCoordinate(remote *Vnode, rtt time.Duration) (coord 
 
 		vn.succLock.Lock()
 		vn.updateSuccessorCoordinate(remote)
+		vn.Vnode.Coordinate = coord
 		vn.updateSuccessorCoordinate(&vn.Vnode)
 		vn.succLock.Unlock()
 
@@ -576,6 +577,7 @@ func (vn *localVnode) UpdateCoordinate(remote *Vnode, rtt time.Duration) (coord 
 	return coord, nil
 }
 
+// update all succesors matching the host with the given coords
 func (vn *localVnode) updateSuccessorCoordinate(remote *Vnode) {
 	for i, succ := range vn.successors {
 		if succ == nil {
